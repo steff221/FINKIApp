@@ -1,0 +1,110 @@
+package com.finki.scheduler.service;
+
+import com.finki.scheduler.domain.ConsultationSlot;
+import com.finki.scheduler.domain.ScheduleSlot;
+import com.finki.scheduler.domain.Teacher;
+import com.finki.scheduler.repository.ConsultationSlotRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Generates a .ics file for a user's personal schedule.
+ *
+ * Class slots are emitted as WEEKLY recurring events anchored to the Monday of the
+ * current week (so the first occurrence is the next occurrence of that weekday).
+ * Teacher consultation slots are emitted as one-time VEVENT entries.
+ */
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class IcsExportService {
+
+    private static final DateTimeFormatter ICS_DT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
+    private static final DateTimeFormatter ICS_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final ZoneId SKOPJE = ZoneId.of("Europe/Skopje");
+
+    private final UserScheduleService userScheduleService;
+    private final ConsultationSlotRepository consultationSlotRepo;
+
+    public String export(Long userId) {
+        List<ScheduleSlot> slots = userScheduleService.getSchedule(userId);
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("BEGIN:VCALENDAR\r\n");
+        sb.append("VERSION:2.0\r\n");
+        sb.append("PRODID:-//FINKIApp//Schedule//EN\r\n");
+        sb.append("CALSCALE:GREGORIAN\r\n");
+        sb.append("METHOD:PUBLISH\r\n");
+
+        for (ScheduleSlot slot : slots) {
+            appendClassSlot(sb, slot);
+            // Inline: append each teacher's upcoming consultation slots
+            for (Teacher teacher : slot.getTeachers()) {
+                if (teacher.getConsultationUsername() != null) {
+                    consultationSlotRepo
+                        .findByTeacherIdOrderByDateAscStartTimeAsc(teacher.getId())
+                        .forEach(cs -> appendConsultationSlot(sb, cs, teacher));
+                }
+            }
+        }
+
+        sb.append("END:VCALENDAR\r\n");
+        return sb.toString();
+    }
+
+    private void appendClassSlot(StringBuilder sb, ScheduleSlot slot) {
+        // Anchor: next occurrence of this day-of-week from today
+        LocalDate today = LocalDate.now(SKOPJE);
+        DayOfWeek dow = DayOfWeek.of(slot.getDayOfWeek() + 1); // 0=Mon → 1
+        LocalDate firstDate = today.with(TemporalAdjusters.nextOrSame(dow));
+
+        ZonedDateTime dtStart = ZonedDateTime.of(firstDate, slot.getStartTime(), SKOPJE);
+        ZonedDateTime dtEnd   = ZonedDateTime.of(firstDate, slot.getEndTime(),   SKOPJE);
+
+        String teacherNames = slot.getTeachers().stream()
+            .map(Teacher::getCyrillicName).filter(n -> n != null && !n.isBlank())
+            .reduce((a, b) -> a + ", " + b).orElse("");
+        String location = slot.getClassroom() != null ? slot.getClassroom().getName() : "";
+        String summary  = slot.getSubject().getBaseName();
+
+        sb.append("BEGIN:VEVENT\r\n");
+        sb.append("UID:").append(UUID.randomUUID()).append("@finki-scheduler\r\n");
+        sb.append("DTSTART;TZID=Europe/Skopje:").append(dtStart.format(ICS_DT)).append("\r\n");
+        sb.append("DTEND;TZID=Europe/Skopje:").append(dtEnd.format(ICS_DT)).append("\r\n");
+        sb.append("RRULE:FREQ=WEEKLY\r\n");
+        sb.append("SUMMARY:").append(escape(summary)).append("\r\n");
+        if (!location.isBlank()) sb.append("LOCATION:").append(escape(location)).append("\r\n");
+        if (!teacherNames.isBlank()) sb.append("DESCRIPTION:").append(escape(teacherNames)).append("\r\n");
+        sb.append("END:VEVENT\r\n");
+    }
+
+    private void appendConsultationSlot(StringBuilder sb, ConsultationSlot cs, Teacher teacher) {
+        ZonedDateTime dtStart = ZonedDateTime.of(cs.getDate(), cs.getStartTime(), SKOPJE);
+        ZonedDateTime dtEnd   = ZonedDateTime.of(cs.getDate(), cs.getEndTime(),   SKOPJE);
+
+        String summary = "Consultations: " + (teacher.getCyrillicName() != null
+            ? teacher.getCyrillicName() : teacher.getConsultationUsername());
+
+        sb.append("BEGIN:VEVENT\r\n");
+        sb.append("UID:").append(UUID.randomUUID()).append("@finki-scheduler\r\n");
+        sb.append("DTSTART;TZID=Europe/Skopje:").append(dtStart.format(ICS_DT)).append("\r\n");
+        sb.append("DTEND;TZID=Europe/Skopje:").append(dtEnd.format(ICS_DT)).append("\r\n");
+        sb.append("SUMMARY:").append(escape(summary)).append("\r\n");
+        if (cs.getRoom() != null && !cs.getRoom().isBlank())
+            sb.append("LOCATION:").append(escape(cs.getRoom())).append("\r\n");
+        if (cs.getInstructions() != null && !cs.getInstructions().isBlank())
+            sb.append("DESCRIPTION:").append(escape(cs.getInstructions())).append("\r\n");
+        sb.append("END:VEVENT\r\n");
+    }
+
+    private String escape(String s) {
+        return s.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n");
+    }
+}
