@@ -54,7 +54,7 @@ CREATE TABLE schedule_slots (
   edupage_card_id  VARCHAR(20) UNIQUE NOT NULL,
   subject_id       BIGINT NOT NULL REFERENCES subjects(id),
   classroom_id     BIGINT REFERENCES classrooms(id),
-  day_of_week      SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+  day_of_week      INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
   start_time       TIME NOT NULL,
   end_time         TIME NOT NULL,
   edition_number   VARCHAR(10) NOT NULL,

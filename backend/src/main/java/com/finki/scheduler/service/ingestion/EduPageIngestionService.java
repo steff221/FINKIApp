@@ -115,10 +115,10 @@ public class EduPageIngestionService {
     }
 
     private String discoverEdition(HttpClient client) throws Exception {
-        String body = objectMapper.writeValueAsString(Map.of(
-            "__args", List.of(null, editionYear),
-            "__gsh", gsh
-        ));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("__args", Arrays.asList(null, editionYear));
+        payload.put("__gsh", gsh);
+        String body = objectMapper.writeValueAsString(payload);
         HttpRequest req = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/timetable/server/ttviewer.js?__func=getTTViewerData"))
             .header("Content-Type", "application/json;charset=UTF-8")
@@ -136,10 +136,10 @@ public class EduPageIngestionService {
     }
 
     private JsonNode fetchTimetableData(HttpClient client, String editionNum) throws Exception {
-        String body = objectMapper.writeValueAsString(Map.of(
-            "__args", List.of(null, editionNum),
-            "__gsh", gsh
-        ));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("__args", Arrays.asList(null, editionNum));
+        payload.put("__gsh", gsh);
+        String body = objectMapper.writeValueAsString(payload);
         HttpRequest req = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/timetable/server/regulartt.js?__func=regularttGetData"))
             .header("Content-Type", "application/json;charset=UTF-8")

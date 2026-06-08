@@ -28,7 +28,7 @@ public class NameNormalizer {
         CYRILLIC_MAP.put("Ќ", "kj"); CYRILLIC_MAP.put("ќ", "kj");
         CYRILLIC_MAP.put("Љ", "lj"); CYRILLIC_MAP.put("љ", "lj");
         CYRILLIC_MAP.put("Њ", "nj"); CYRILLIC_MAP.put("њ", "nj");
-        CYRILLIC_MAP.put("Џ", "dz"); CYRILLIC_MAP.put("џ", "dz");
+        CYRILLIC_MAP.put("Џ", "dzh"); CYRILLIC_MAP.put("џ", "dzh");
         CYRILLIC_MAP.put("Ж", "zh"); CYRILLIC_MAP.put("ж", "zh");
         CYRILLIC_MAP.put("Ш", "sh"); CYRILLIC_MAP.put("ш", "sh");
         CYRILLIC_MAP.put("Ч", "ch"); CYRILLIC_MAP.put("ч", "ch");

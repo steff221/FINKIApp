@@ -12,7 +12,7 @@ export default function ConsultationsPage() {
 
   const { data, isLoading } = useSWR<TeacherWithSlotsResponse[]>(
     ["/api/consultations", debouncedQuery],
-    ([, q]) => getConsultations(q || undefined)
+    ([, q]: [string, string]) => getConsultations(q || undefined)
   );
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {

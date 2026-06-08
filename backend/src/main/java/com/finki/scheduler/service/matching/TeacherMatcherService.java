@@ -100,15 +100,18 @@ public class TeacherMatcherService {
      */
     private void merge(Teacher edupageTeacher, Teacher consultationTeacher,
                        BigDecimal confidence, boolean manual) {
-        edupageTeacher.setConsultationUsername(consultationTeacher.getConsultationUsername());
+        String username = consultationTeacher.getConsultationUsername();
+
+        // Delete the orphan row first to release the UNIQUE slot before saving the merged row
+        if (!consultationTeacher.getId().equals(edupageTeacher.getId())) {
+            teacherRepo.delete(consultationTeacher);
+            teacherRepo.flush();
+        }
+
+        edupageTeacher.setConsultationUsername(username);
         edupageTeacher.setMatchConfidence(confidence);
         edupageTeacher.setManualOverride(manual);
         teacherRepo.save(edupageTeacher);
-
-        // If the consultation teacher is a separate row, clean it up
-        if (!consultationTeacher.getId().equals(edupageTeacher.getId())) {
-            teacherRepo.delete(consultationTeacher);
-        }
     }
 
     // Levenshtein similarity in [0, 1]
