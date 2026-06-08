@@ -67,8 +67,8 @@ export default function NavBar() {
           <div className="ml-auto flex items-center gap-3">
             {auth ? (
               <div className="flex items-center gap-2.5 bg-white/10 rounded-full pl-1 pr-1.5 py-1">
-                <span className="w-7 h-7 rounded-full bg-blue-300 text-finki-navy text-xs font-bold flex items-center justify-center shrink-0">
-                  {auth.email.slice(0, 2).toUpperCase()}
+                <span className="w-7 h-7 rounded-full bg-blue-300 flex items-center justify-center shrink-0 overflow-hidden">
+                  <Image src="/Student.png" alt="" width={18} height={18} className="object-contain" />
                 </span>
                 <span className="text-white/80 text-sm hidden sm:block max-w-[140px] truncate">{auth.email}</span>
                 <button
