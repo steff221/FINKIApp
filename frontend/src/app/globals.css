@@ -1,12 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --finki-blue: #003366;
-  --finki-light: #0055a5;
+  --finki-navy:  #00265c;
+  --finki-blue:  #00265c;
+  --finki-mid:   #0050b3;
+  --finki-light: #0050b3;
 }
 
+html { scroll-behavior: smooth; }
+
 body {
-  @apply bg-gray-50 text-gray-900;
+  font-family: 'Inter', system-ui, sans-serif;
+  @apply bg-canvas text-gray-900 antialiased;
 }
+
+*:focus-visible {
+  @apply outline-none ring-2 ring-blue-400/50 ring-offset-1;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-gray-400; }

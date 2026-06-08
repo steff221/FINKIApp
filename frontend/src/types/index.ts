@@ -73,6 +73,29 @@ export interface AuthResponse {
   email: string;
 }
 
+export interface CustomEntryResponse {
+  id: number;
+  title: string;
+  professor: string | null;
+  entryType: "LECTURE" | "LAB" | "EXERCISE" | "COMBINED";
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  room: string | null;
+  color: string | null;
+}
+
+export interface CustomEntryRequest {
+  title: string;
+  professor: string;
+  entryType: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  room: string;
+  color: string;
+}
+
 // ── Local state types ─────────────────────────────────────────────────────────
 
 export interface TimetableFilters {

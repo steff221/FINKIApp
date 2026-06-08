@@ -13,11 +13,18 @@ export default function ConsultationInline({ teacherId, teacherName }: Props) {
     () => getConsultationsForTeacher(teacherId)
   );
 
-  if (isLoading) return <p className="text-xs text-gray-400">Loading consultations…</p>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-gray-400">
+        <div className="w-3 h-3 rounded-full border-2 border-gray-200 border-t-finki-mid animate-spin" />
+        Loading consultations…
+      </div>
+    );
+  }
 
   if (!data || data.length === 0) {
     return (
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-gray-400 italic">
         No upcoming consultations for {teacherName} in the next 6 days.
       </p>
     );
@@ -25,20 +32,24 @@ export default function ConsultationInline({ teacherId, teacherName }: Props) {
 
   return (
     <div>
-      <p className="text-xs font-medium text-gray-600 mb-1">
-        Upcoming consultations — {teacherName}:
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        Upcoming — {teacherName}
       </p>
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         {data.map(slot => (
-          <div key={slot.id} className="text-xs text-gray-700 flex gap-2">
-            <span className="font-medium">{slot.date}</span>
-            <span>{formatTime(slot.startTime)}–{formatTime(slot.endTime)}</span>
-            {slot.room && <span className="text-gray-500">· {slot.room}</span>}
-            {slot.instructions && (
-              <span className="text-gray-400 truncate max-w-xs" title={slot.instructions}>
-                · {slot.instructions}
+          <div key={slot.id} className="flex items-start gap-2.5">
+            <span className="shrink-0 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md px-2 py-0.5 tabular-nums">
+              {slot.date}
+            </span>
+            <div className="text-xs text-gray-700">
+              <span className="font-medium tabular-nums">
+                {formatTime(slot.startTime)}–{formatTime(slot.endTime)}
               </span>
-            )}
+              {slot.room && <span className="text-gray-400"> · {slot.room}</span>}
+              {slot.instructions && (
+                <p className="text-gray-400 mt-0.5">{slot.instructions}</p>
+              )}
+            </div>
           </div>
         ))}
       </div>

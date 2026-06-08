@@ -1,6 +1,8 @@
 import type {
   AuthResponse,
   ConsultationSlotResponse,
+  CustomEntryRequest,
+  CustomEntryResponse,
   ScheduleSlotResponse,
   TeacherWithSlotsResponse,
   TimetableFilters,
@@ -50,12 +52,22 @@ async function del(path: string): Promise<void> {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
+async function postPublic<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(BASE + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 export async function register(email: string, password: string): Promise<AuthResponse> {
-  return post("/auth/register", { email, password });
+  return postPublic("/auth/register", { email, password });
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  return post("/auth/login", { email, password });
+  return postPublic("/auth/login", { email, password });
 }
 
 // ── Timetable ─────────────────────────────────────────────────────────────────
@@ -98,6 +110,30 @@ export async function addToSchedule(slotId: number): Promise<void> {
 
 export async function removeFromSchedule(slotId: number): Promise<void> {
   return del(`/schedule/slots/${slotId}`);
+}
+
+// ── Custom schedule entries ───────────────────────────────────────────────────
+
+export async function getCustomEntries(): Promise<CustomEntryResponse[]> {
+  return get("/schedule/custom");
+}
+
+export async function createCustomEntry(data: CustomEntryRequest): Promise<CustomEntryResponse> {
+  return post("/schedule/custom", data);
+}
+
+export async function updateCustomEntry(id: number, data: CustomEntryRequest): Promise<CustomEntryResponse> {
+  const res = await fetch(`${BASE}/schedule/custom/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`PUT /schedule/custom/${id} failed: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteCustomEntry(id: number): Promise<void> {
+  return del(`/schedule/custom/${id}`);
 }
 
 export function getIcsUrl(): string {
