@@ -6,7 +6,7 @@ import Image from "next/image";
 import WeeklyCalendar from "@/components/schedule/WeeklyCalendar";
 import AddEntryModal from "@/components/schedule/AddEntryModal";
 import type { CustomEntryResponse, CustomEntryRequest } from "@/types";
-import { getCustomEntries, createCustomEntry, updateCustomEntry, deleteCustomEntry } from "@/lib/api";
+import { getCustomEntries, createCustomEntry, updateCustomEntry, deleteCustomEntry, getIcsUrl } from "@/lib/api";
 import { getAuth } from "@/lib/auth";
 
 const SWR_KEY = "/schedule/custom";
@@ -92,6 +92,20 @@ export default function SchedulePage() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            {entries.length > 0 && (
+              <a
+                href={getIcsUrl()}
+                title="Download your schedule as a calendar file (.ics)"
+                className="flex items-center gap-2 bg-white text-gray-600 border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 hover:text-finki-navy transition-colors shadow-sm"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Export
+              </a>
+            )}
             <button
               onClick={openAddLab}
               className="group w-44 flex items-center gap-2.5 bg-white text-emerald-700 border border-emerald-200 pl-1.5 pr-4 py-1.5 rounded-xl text-sm font-semibold hover:bg-emerald-50 hover:border-emerald-300 transition-colors shadow-sm"
