@@ -23,11 +23,13 @@ public class TimetableController {
         @RequestParam(required = false) Long subjectId,
         @RequestParam(required = false) Long classroomId,
         @RequestParam(required = false) String lessonType,
-        @RequestParam(required = false) Integer dayOfWeek
+        @RequestParam(required = false) Integer dayOfWeek,
+        @RequestParam(required = false) String editionNumber,
+        @RequestParam(required = false, defaultValue = "false") boolean allEditions
     ) {
         LessonType type = lessonType != null ? LessonType.valueOf(lessonType) : null;
         return timetableService.getSlots(year, programmeCode, teacherId,
-                subjectId, classroomId, type, dayOfWeek)
+                subjectId, classroomId, type, dayOfWeek, editionNumber, allEditions)
             .stream().map(ScheduleSlotResponse::from).toList();
     }
 
@@ -38,7 +40,9 @@ public class TimetableController {
             timetableService.getDistinctProgrammes(),
             timetableService.getAllSubjects().stream().map(SubjectResponse::from).toList(),
             timetableService.getAllTeachers().stream().map(TeacherResponse::from).toList(),
-            timetableService.getAllClassrooms().stream().map(ClassroomResponse::from).toList()
+            timetableService.getAllClassrooms().stream().map(ClassroomResponse::from).toList(),
+            timetableService.getEditions(),
+            timetableService.currentEdition()
         );
     }
 }

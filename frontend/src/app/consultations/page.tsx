@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import useSWR from "swr";
 import { getConsultations } from "@/lib/api";
 import type { ConsultationSlotResponse, TeacherWithSlotsResponse } from "@/types";
@@ -20,6 +21,20 @@ function avatarColor(name: string) {
 function initials(name: string) {
   const parts = name.trim().split(/\s+/);
   return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+// "YYYY-MM-DD" → friendly badge: "Today" / "Tomorrow" / "Mon 9 Jun"
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function dateBadge(dateStr: string): { label: string; today: boolean } {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const now = new Date();
+  const startOfDay = (dt: Date) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  const diffDays = Math.round((startOfDay(date).getTime() - startOfDay(now).getTime()) / 86_400_000);
+  if (diffDays === 0) return { label: "Today", today: true };
+  if (diffDays === 1) return { label: "Tomorrow", today: false };
+  return { label: `${WEEKDAYS[date.getDay()]} ${d} ${MONTHS[m - 1]}`, today: false };
 }
 
 // ── Professor card ────────────────────────────────────────────────────────────
@@ -46,7 +61,10 @@ function ProfessorCard({
           <span className="text-white text-xs font-bold tracking-wide">{initials(name)}</span>
         </div>
         <div className="min-w-0">
-          <p className="font-semibold text-gray-900 text-sm leading-tight truncate">{name}</p>
+          <div className="flex items-center gap-1.5">
+            <Image src="/Proffessor.png" alt="" width={13} height={13} className="object-contain shrink-0 opacity-60" />
+            <p className="font-semibold text-gray-900 text-sm leading-tight truncate">{name}</p>
+          </div>
           {hasSlots && (
             <p className="text-xs text-emerald-600 font-medium mt-0.5">
               {slots.length} slot{slots.length > 1 ? "s" : ""} available
@@ -61,10 +79,17 @@ function ProfessorCard({
       {/* Slots */}
       <div className="px-4 py-3 flex-1 space-y-2">
         {hasSlots ? (
-          slots.map(slot => (
+          slots.map(slot => {
+            const badge = dateBadge(slot.date);
+            return (
             <div key={slot.id} className="flex items-start gap-2.5">
-              <div className="shrink-0 mt-0.5 bg-blue-50 text-blue-700 rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums whitespace-nowrap">
-                {slot.date}
+              <div
+                title={slot.date}
+                className={`shrink-0 mt-0.5 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${
+                  badge.today ? "bg-emerald-100 text-emerald-700" : "bg-blue-50 text-blue-700"
+                }`}
+              >
+                {badge.label}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-gray-800">
@@ -76,7 +101,8 @@ function ProfessorCard({
                 )}
               </div>
             </div>
-          ))
+            );
+          })
         ) : (
           <p className="text-xs text-gray-400 italic">No consultations in the next 6 days.</p>
         )}
@@ -145,8 +171,19 @@ export default function ConsultationsPage() {
           placeholder="Search professor…"
           value={query}
           onChange={handleSearch}
-          className="w-full bg-white shadow-card rounded-xl pl-9 pr-4 py-2.5 text-sm placeholder-gray-400 border-0 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all"
+          className="w-full bg-white shadow-card rounded-xl pl-9 pr-9 py-2.5 text-sm placeholder-gray-400 border-0 focus:outline-none focus:ring-2 focus:ring-blue-400/40 transition-all"
         />
+        {query && (
+          <button
+            onClick={() => { setQuery(""); setDebouncedQuery(""); }}
+            aria-label="Clear search"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Loading skeleton */}

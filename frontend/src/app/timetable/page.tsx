@@ -17,6 +17,7 @@ const EMPTY_FILTERS: TimetableFilters = {
   classroomId: null,
   lessonType: null,
   dayOfWeek: null,
+  editionNumber: null,   // null → backend defaults to the current edition
 };
 
 function GridSkeleton() {

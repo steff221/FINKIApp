@@ -1,7 +1,7 @@
 "use client";
 
 import type { TimetableFilters, TimetableFiltersResponse } from "@/types";
-import { DAY_NAMES, LESSON_TYPE_LABELS } from "@/types";
+import { DAY_NAMES, LESSON_TYPE_LABELS, editionLabel } from "@/types";
 
 interface Props {
   filters: TimetableFilters;
@@ -49,6 +49,21 @@ export default function FilterPanel({ filters, options, onChange, onReset }: Pro
 
       {/* Filter fields */}
       <div className="p-4 space-y-4">
+        {(options?.editions?.length ?? 0) > 1 && (
+          <label className="block">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Semester</span>
+            <select
+              value={filters.editionNumber ?? options?.currentEdition ?? ""}
+              onChange={e => set("editionNumber", str(e.target.value))}
+              className={selectCls}
+            >
+              {(options?.editions ?? []).map(ed => (
+                <option key={ed} value={ed}>{editionLabel(ed)}</option>
+              ))}
+            </select>
+          </label>
+        )}
+
         <label className="block">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Year</span>
           <select

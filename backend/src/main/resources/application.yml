@@ -38,6 +38,9 @@ edupage:
   base-url: https://finki.edupage.org
   gsh: ${EDUPAGE_GSH:00000000}
   edition-year: ${EDUPAGE_EDITION_YEAR:2025}
+  # Extra edition numbers ingested alongside the current one (comma-separated),
+  # e.g. the winter timetable so both semesters' subjects are available.
+  extra-editions: ${EDUPAGE_EXTRA_EDITIONS:26}
 
 consultations:
   base-url: https://consultations.finki.ukim.mk

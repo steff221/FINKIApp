@@ -21,7 +21,8 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Long
         LEFT JOIN FETCH s.classroom
         LEFT JOIN FETCH s.teachers
         LEFT JOIN FETCH s.studyClasses sc
-        WHERE (:year       IS NULL OR sc.year          = :year)
+        WHERE (:editionNumber IS NULL OR s.editionNumber = :editionNumber)
+          AND (:year       IS NULL OR sc.year          = :year)
           AND (:programme  IS NULL OR sc.programmeCode = :programme)
           AND (:teacherId  IS NULL OR EXISTS (SELECT 1 FROM s.teachers t WHERE t.id = :teacherId))
           AND (:subjectId  IS NULL OR subj.id           = :subjectId)
@@ -31,6 +32,7 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Long
         ORDER BY s.dayOfWeek, s.startTime
         """)
     List<ScheduleSlot> findFiltered(
+        @Param("editionNumber") String editionNumber,
         @Param("year")        Short year,
         @Param("programme")   String programme,
         @Param("teacherId")   Long teacherId,
@@ -39,6 +41,9 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Long
         @Param("lessonType")  LessonType lessonType,
         @Param("dayOfWeek")   Integer dayOfWeek
     );
+
+    @Query("SELECT DISTINCT s.editionNumber FROM ScheduleSlot s WHERE s.editionNumber IS NOT NULL")
+    List<String> findDistinctEditionNumbers();
 
     @Query("""
         SELECT s FROM ScheduleSlot s

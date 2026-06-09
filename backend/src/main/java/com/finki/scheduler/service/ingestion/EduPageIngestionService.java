@@ -39,6 +39,9 @@ public class EduPageIngestionService {
     private String gsh;
     @Value("${edupage.edition-year}")
     private String editionYear;
+    /** Extra edition numbers to ingest alongside the current one (comma-separated), e.g. the winter timetable. */
+    @Value("${edupage.extra-editions:}")
+    private String extraEditions;
 
     private final ClassroomRepository classroomRepo;
     private final SubjectRepository subjectRepo;
@@ -69,27 +72,29 @@ public class EduPageIngestionService {
             // Step 1: establish session
             warmSession(client);
 
-            // Step 2: discover current edition
-            String editionNum = discoverEdition(client);
-            log.info("Ingesting EduPage timetable edition {}", editionNum);
+            // Step 2: discover the current (default) edition, then build the full ingest list:
+            // current edition first, plus any configured extra editions (e.g. the winter timetable).
+            String currentEdition = discoverEdition(client);
+            List<String> editions = new ArrayList<>();
+            editions.add(currentEdition);
+            for (String e : extraEditions.split(",")) {
+                String trimmed = e.trim();
+                if (!trimmed.isEmpty() && !editions.contains(trimmed)) editions.add(trimmed);
+            }
+            log.info("Ingesting EduPage timetable editions {} (current: {})", editions, currentEdition);
 
-            // Step 3: fetch timetable data
-            JsonNode tables = fetchTimetableData(client, editionNum);
-
-            // Step 4: parse and persist
-            Map<String, LocalTime[]> periods = parsePeriods(tables);
-            Map<String, Classroom> classrooms = upsertClassrooms(tables);
-            Map<String, Subject> subjects = upsertSubjects(tables);
-            Map<String, StudyClass> classes = upsertStudyClasses(tables);
-            Map<String, Teacher> teachers = upsertTeachers(tables);
-            int count = upsertCards(tables, periods, subjects, classrooms, teachers, classes, editionNum);
-
-            if (count == 0) {
-                log.error("HEALTH ALERT: EduPage ingestion returned 0 cards for edition {}. " +
-                    "The endpoint may have changed or the edition number is stale.", editionNum);
+            // Step 3+4: fetch, parse and persist each edition
+            int count = 0;
+            for (String editionNum : editions) {
+                count += ingestEdition(client, editionNum);
             }
 
-            entry.setEditionNumber(editionNum);
+            if (count == 0) {
+                log.error("HEALTH ALERT: EduPage ingestion returned 0 cards for editions {}. " +
+                    "The endpoint may have changed or the edition numbers are stale.", editions);
+            }
+
+            entry.setEditionNumber(currentEdition);
             entry.setStatus(IngestionLog.Status.SUCCESS);
             entry.setRecordCount(count);
             entry.setCompletedAt(java.time.Instant.now());
@@ -104,6 +109,19 @@ public class EduPageIngestionService {
             logRepo.save(entry);
             throw new RuntimeException("EduPage ingestion failed: " + e.getMessage(), e);
         }
+    }
+
+    /** Fetches one edition's timetable and upserts its reference data + cards. Returns cards stored. */
+    private int ingestEdition(HttpClient client, String editionNum) throws Exception {
+        JsonNode tables = fetchTimetableData(client, editionNum);
+        Map<String, LocalTime[]> periods = parsePeriods(tables);
+        Map<String, Classroom> classrooms = upsertClassrooms(tables);
+        Map<String, Subject> subjects = upsertSubjects(tables);
+        Map<String, StudyClass> classes = upsertStudyClasses(tables);
+        Map<String, Teacher> teachers = upsertTeachers(tables);
+        int count = upsertCards(tables, periods, subjects, classrooms, teachers, classes, editionNum);
+        log.info("Edition {}: stored {} cards", editionNum, count);
+        return count;
     }
 
     private void warmSession(HttpClient client) throws Exception {
@@ -300,7 +318,8 @@ public class EduPageIngestionService {
         int count = 0;
         for (JsonNode card : dataRows(tables, "cards")) {
             try {
-                String cardId   = card.path("id").asText();
+                // Card IDs are reused across editions, so namespace by edition to keep slots distinct.
+                String cardId   = editionNum + ":" + card.path("id").asText();
                 String lessonId = card.path("lessonid").asText();
                 JsonNode lesson = lessons.get(lessonId);
                 if (lesson == null) {

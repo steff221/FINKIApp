@@ -49,8 +49,8 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
 
   // Pull scraped subjects + teachers from the timetable filters (public endpoint)
   const { data: filters } = useSWR("/timetable/filters", () => getFilters());
-  // Pull all timetable slots so we can link each subject to the teachers who teach it
-  const { data: slots } = useSWR("/timetable/slots/all", () => getSlots({}));
+  // Pull all timetable slots (every edition) so we can link each subject to its teachers/sessions
+  const { data: slots } = useSWR("/timetable/slots/all", () => getSlots({}, { allEditions: true }));
 
   // Unique scraped subject names (baseName) for the Subject autocomplete
   const subjectOptions = useMemo(() => {

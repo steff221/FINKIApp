@@ -60,6 +60,8 @@ export interface TimetableFiltersResponse {
   subjects: SubjectResponse[];
   teachers: TeacherResponse[];
   classrooms: ClassroomResponse[];
+  editions: string[];
+  currentEdition: string | null;
 }
 
 export interface UserScheduleResponse {
@@ -106,9 +108,22 @@ export interface TimetableFilters {
   classroomId: number | null;
   lessonType: string | null;
   dayOfWeek: number | null;
+  editionNumber: string | null;
 }
 
 export const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+// Human labels for known EduPage timetable editions (semesters)
+export const EDITION_LABELS: Record<string, string> = {
+  "28": "Летен 2025/26",
+  "27": "Летен 2025/26 (прва недела)",
+  "26": "Зимски 2025/26",
+  "25": "Летен 2024/25",
+  "23": "Зимски 2024/25",
+};
+export function editionLabel(num: string): string {
+  return EDITION_LABELS[num] ?? `Едиција ${num}`;
+}
 
 export const LESSON_TYPE_LABELS: Record<string, string> = {
   LECTURE:  "Lecture",

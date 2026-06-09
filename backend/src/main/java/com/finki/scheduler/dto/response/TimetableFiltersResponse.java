@@ -7,5 +7,7 @@ public record TimetableFiltersResponse(
     List<String> programmes,
     List<SubjectResponse>   subjects,
     List<TeacherResponse>   teachers,
-    List<ClassroomResponse> classrooms
+    List<ClassroomResponse> classrooms,
+    List<String> editions,
+    String       currentEdition
 ) {}

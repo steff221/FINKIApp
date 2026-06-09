@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -22,9 +23,31 @@ public class TimetableService {
     public List<ScheduleSlot> getSlots(Short year, String programmeCode,
                                         Long teacherId, Long subjectId,
                                         Long classroomId, LessonType lessonType,
-                                        Integer dayOfWeek) {
-        return slotRepo.findFiltered(year, programmeCode, teacherId,
+                                        Integer dayOfWeek,
+                                        String editionNumber, boolean allEditions) {
+        // Default to the current edition so the timetable never mixes semesters.
+        // allEditions=true (used by the personal-schedule autocomplete) returns every edition.
+        String edition = allEditions ? null
+            : (editionNumber != null ? editionNumber : currentEdition());
+        return slotRepo.findFiltered(edition, year, programmeCode, teacherId,
             subjectId, classroomId, lessonType, dayOfWeek);
+    }
+
+    /** The current edition = the highest edition number present in the data. */
+    public String currentEdition() {
+        return slotRepo.findDistinctEditionNumbers().stream()
+            .max(Comparator.comparingInt(this::editionAsInt))
+            .orElse(null);
+    }
+
+    public List<String> getEditions() {
+        return slotRepo.findDistinctEditionNumbers().stream()
+            .sorted(Comparator.comparingInt(this::editionAsInt).reversed())
+            .toList();
+    }
+
+    private int editionAsInt(String s) {
+        try { return Integer.parseInt(s); } catch (NumberFormatException e) { return -1; }
     }
 
     public List<String> getDistinctProgrammes() {

@@ -72,7 +72,10 @@ export async function login(email: string, password: string): Promise<AuthRespon
 
 // ── Timetable ─────────────────────────────────────────────────────────────────
 
-export async function getSlots(filters: Partial<TimetableFilters>): Promise<ScheduleSlotResponse[]> {
+export async function getSlots(
+  filters: Partial<TimetableFilters>,
+  opts?: { allEditions?: boolean }
+): Promise<ScheduleSlotResponse[]> {
   return get("/timetable/slots", {
     year:          filters.year,
     programmeCode: filters.programmeCode,
@@ -81,6 +84,8 @@ export async function getSlots(filters: Partial<TimetableFilters>): Promise<Sche
     classroomId:   filters.classroomId,
     lessonType:    filters.lessonType,
     dayOfWeek:     filters.dayOfWeek,
+    editionNumber: filters.editionNumber,
+    allEditions:   opts?.allEditions ? "true" : undefined,
   });
 }
 
