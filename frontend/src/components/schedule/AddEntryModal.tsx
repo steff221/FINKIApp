@@ -5,6 +5,7 @@ import useSWR from "swr";
 import type { CustomEntryResponse, CustomEntryRequest, ScheduleSlotResponse } from "@/types";
 import { DAY_NAMES, LESSON_TYPE_LABELS } from "@/types";
 import { getFilters, getSlots } from "@/lib/api";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 // FINKI lab rooms selectable via the "Add lab" button
 const LAB_ROOMS = ["2", "3", "13", "12", "117", "200b", "200v"];
@@ -100,6 +101,8 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
 
   // Suppresses the auto-end-time effect when we prefill start+end from a real slot
   const prefilling = useRef(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef);
 
   function applySlot(slot: ScheduleSlotResponse) {
     prefilling.current = true;
@@ -229,7 +232,13 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={initial ? "Edit entry" : "Add to calendar"}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="font-bold text-gray-900 text-base">

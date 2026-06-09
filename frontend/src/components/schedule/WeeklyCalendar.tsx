@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { CustomEntryResponse } from "@/types";
 import { DAY_NAMES, LESSON_TYPE_LABELS, formatTime } from "@/types";
 
@@ -33,13 +33,49 @@ const TYPE_STYLE: Record<string, { bg: string; text: string; badge: string }> = 
 
 interface Props {
   entries: CustomEntryResponse[];
+  conflictIds?: Set<number>;
   onAdd: (day: number, startTime: string) => void;
   onEdit: (entry: CustomEntryResponse) => void;
 }
 
-export default function WeeklyCalendar({ entries, onAdd, onEdit }: Props) {
-  const [hoverCell, setHoverCell] = useState<{ day: number; hour: number } | null>(null);
+// Greedy column assignment so overlapping entries render side-by-side
+// rather than stacking on top of each other. Returns id → {col, cols}.
+function layoutDay(dayEntries: CustomEntryResponse[]): Map<number, { col: number; cols: number }> {
+  const tm = (t: string) => timeToMinutes(t);
+  const sorted = [...dayEntries].sort(
+    (a, b) => tm(a.startTime) - tm(b.startTime) || tm(a.endTime) - tm(b.endTime)
+  );
+  const result = new Map<number, { col: number; cols: number }>();
 
+  let cluster: CustomEntryResponse[] = [];
+  let clusterEnd = -1;
+  const flush = (group: CustomEntryResponse[]) => {
+    const colEnds: number[] = [];
+    group.forEach(e => {
+      let placed = false;
+      for (let c = 0; c < colEnds.length; c++) {
+        if (tm(e.startTime) >= colEnds[c]) { colEnds[c] = tm(e.endTime); result.set(e.id, { col: c, cols: 0 }); placed = true; break; }
+      }
+      if (!placed) { result.set(e.id, { col: colEnds.length, cols: 0 }); colEnds.push(tm(e.endTime)); }
+    });
+    group.forEach(e => { result.get(e.id)!.cols = colEnds.length; });
+  };
+
+  sorted.forEach(e => {
+    if (cluster.length === 0 || tm(e.startTime) < clusterEnd) {
+      cluster.push(e);
+      clusterEnd = Math.max(clusterEnd, tm(e.endTime));
+    } else {
+      flush(cluster);
+      cluster = [e];
+      clusterEnd = tm(e.endTime);
+    }
+  });
+  if (cluster.length) flush(cluster);
+  return result;
+}
+
+export default function WeeklyCalendar({ entries, conflictIds, onAdd, onEdit }: Props) {
   const byDay = useMemo(() => {
     const map: Record<number, CustomEntryResponse[]> = {};
     for (let i = 0; i < 5; i++) map[i] = [];
@@ -48,6 +84,12 @@ export default function WeeklyCalendar({ entries, onAdd, onEdit }: Props) {
     });
     return map;
   }, [entries]);
+
+  const layouts = useMemo(() => {
+    const m: Record<number, Map<number, { col: number; cols: number }>> = {};
+    for (let i = 0; i < 5; i++) m[i] = layoutDay(byDay[i]);
+    return m;
+  }, [byDay]);
 
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i);
 
@@ -126,18 +168,35 @@ export default function WeeklyCalendar({ entries, onAdd, onEdit }: Props) {
               const style  = TYPE_STYLE[entry.entryType] ?? TYPE_STYLE.LECTURE;
               const bgColor = entry.color ?? undefined;
               const shortTitle = entry.title.length > 20 ? entry.title.slice(0, 18) + "…" : entry.title;
+              const conflict = conflictIds?.has(entry.id) ?? false;
+
+              // Side-by-side placement within the day column when entries overlap
+              const { col, cols } = layouts[day].get(entry.id) ?? { col: 0, cols: 1 };
+              const widthPct = 100 / cols;
+              const leftCalc = `calc(${col * widthPct}% + 4px)`;
+              const widthStyle = `calc(${widthPct}% - ${cols > 1 ? 6 : 8}px)`;
 
               return (
                 <div
                   key={entry.id}
-                  className={`absolute left-1 right-1 rounded-lg ${style.text} px-2 py-1 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer z-10`}
-                  style={{ top, height, backgroundColor: bgColor ?? undefined, filter: bgColor ? undefined : undefined }}
+                  title={conflict ? "Overlaps another entry" : entry.title}
+                  className={`absolute rounded-lg ${style.text} px-2 py-1 overflow-hidden shadow-sm hover:shadow-md hover:z-20 transition-shadow cursor-pointer z-10 ${
+                    conflict ? "ring-2 ring-red-500 ring-offset-1" : ""
+                  }`}
+                  style={{ top, height, left: leftCalc, width: widthStyle, backgroundColor: bgColor ?? undefined }}
                   onClick={e => { e.stopPropagation(); onEdit(entry); }}
                 >
-                  <div className={`inline-block text-[9px] font-bold uppercase tracking-wide rounded px-1 mb-0.5 ${
-                    bgColor ? "bg-black/20 text-white" : style.badge
-                  }`}>
-                    {LESSON_TYPE_LABELS[entry.entryType]}
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className={`inline-block text-[9px] font-bold uppercase tracking-wide rounded px-1 ${
+                      bgColor ? "bg-black/20 text-white" : style.badge
+                    }`}>
+                      {LESSON_TYPE_LABELS[entry.entryType]}
+                    </span>
+                    {conflict && (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
+                        <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                      </svg>
+                    )}
                   </div>
                   <p className="text-xs font-semibold leading-tight truncate">{shortTitle}</p>
                   {height > 36 && entry.professor && (

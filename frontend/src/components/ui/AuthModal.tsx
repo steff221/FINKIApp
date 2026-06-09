@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { login, register } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface Props { onClose: () => void; }
 
@@ -23,8 +24,10 @@ export default function AuthModal({ onClose }: Props) {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEscClose(onClose);
+  useFocusTrap(dialogRef);
 
   function switchMode(next: "login" | "register") {
     setMode(next);
@@ -61,7 +64,13 @@ export default function AuthModal({ onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={mode === "login" ? "Log in" : "Create account"}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="font-bold text-gray-900 text-base">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { getFilters, getSlots } from "@/lib/api";
 import type { TimetableFilters, TimetableFiltersResponse } from "@/types";
@@ -43,6 +43,38 @@ function GridSkeleton() {
 export default function TimetablePage() {
   const [filters, setFilters] = useState<TimetableFilters>(EMPTY_FILTERS);
   const [showSchedule, setShowSchedule] = useState(false);
+
+  // ── Shareable URL: hydrate filters from the query string on mount … ──────────
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    if ([...sp.keys()].length === 0) return;
+    const numOr = (k: string) => (sp.get(k) != null ? Number(sp.get(k)) : null);
+    setFilters({
+      year:          numOr("year"),
+      programmeCode: sp.get("programme"),
+      teacherId:     numOr("teacher"),
+      subjectId:     numOr("subject"),
+      classroomId:   numOr("room"),
+      lessonType:    sp.get("type"),
+      dayOfWeek:     numOr("day"),
+      editionNumber: sp.get("semester"),
+    });
+  }, []);
+
+  // … and reflect filter changes back into the URL (bookmarkable / shareable)
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (filters.year != null)        sp.set("year", String(filters.year));
+    if (filters.programmeCode)       sp.set("programme", filters.programmeCode);
+    if (filters.teacherId != null)   sp.set("teacher", String(filters.teacherId));
+    if (filters.subjectId != null)   sp.set("subject", String(filters.subjectId));
+    if (filters.classroomId != null) sp.set("room", String(filters.classroomId));
+    if (filters.lessonType)          sp.set("type", filters.lessonType);
+    if (filters.dayOfWeek != null)   sp.set("day", String(filters.dayOfWeek));
+    if (filters.editionNumber)       sp.set("semester", filters.editionNumber);
+    const qs = sp.toString();
+    window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+  }, [filters]);
 
   const { data: filterOptions } = useSWR<TimetableFiltersResponse>(
     "/api/timetable/filters",

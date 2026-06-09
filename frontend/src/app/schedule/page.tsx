@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 import Image from "next/image";
 import WeeklyCalendar from "@/components/schedule/WeeklyCalendar";
@@ -18,6 +18,22 @@ export default function SchedulePage() {
     auth ? SWR_KEY : null,
     () => getCustomEntries()
   );
+
+  // Entries on the same day whose time ranges overlap
+  const conflictIds = useMemo(() => {
+    const ids = new Set<number>();
+    const byDay: Record<number, CustomEntryResponse[]> = {};
+    entries.forEach(e => { (byDay[e.dayOfWeek] ??= []).push(e); });
+    Object.values(byDay).forEach(list => {
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i], b = list[j];
+          if (a.startTime < b.endTime && b.startTime < a.endTime) { ids.add(a.id); ids.add(b.id); }
+        }
+      }
+    });
+    return ids;
+  }, [entries]);
 
   const [modal, setModal] = useState<{
     open: boolean;
@@ -155,6 +171,19 @@ export default function SchedulePage() {
           </span>
         </div>
 
+        {/* Conflict warning */}
+        {conflictIds.size > 0 && (
+          <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl px-4 py-2.5 text-sm mb-4 border border-red-100">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
+              <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+            </svg>
+            <span>
+              <span className="font-semibold">{conflictIds.size} overlapping {conflictIds.size === 1 ? "entry" : "entries"}</span>
+              {" "}— two classes are scheduled at the same time (outlined in red).
+            </span>
+          </div>
+        )}
+
         {/* Calendar */}
         {isLoading ? (
           <div className="bg-white rounded-2xl border border-gray-100 h-96 flex items-center justify-center">
@@ -164,7 +193,7 @@ export default function SchedulePage() {
             </div>
           </div>
         ) : (
-          <WeeklyCalendar entries={entries} onAdd={openAdd} onEdit={openEdit} />
+          <WeeklyCalendar entries={entries} conflictIds={conflictIds} onAdd={openAdd} onEdit={openEdit} />
         )}
       </div>
 
