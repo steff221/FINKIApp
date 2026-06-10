@@ -3,8 +3,12 @@
 import { useMemo, useState } from "react";
 import { LOCATIONS, type FinkiLocation } from "@/lib/locations";
 
-// FINKI indoor/campus map (OpenLevelUp) — shows every room label
+// Detailed FINKI indoor map (OpenLevelUp) — opened in a new tab via the button.
+// Not embedded: its indoor-data service often fails inside an iframe ("Can't retrieve data").
 const MAP_URL = "https://map.finki.ukim.mk/?l=0#18/42.00465/21.40903";
+// Reliable embed: OpenStreetMap of the FINKI campus (no third-party data service, works everywhere).
+const OSM_EMBED =
+  "https://www.openstreetmap.org/export/embed.html?bbox=21.4040,42.0021,21.4141,42.0072&layer=mapnik&marker=42.00465,21.40903";
 
 const KIND_STYLE: Record<NonNullable<FinkiLocation["kind"]> | "default", { dot: string; label: string }> = {
   lab:         { dot: "bg-emerald-500", label: "Lab" },
@@ -150,21 +154,28 @@ export default function MapsPage() {
         )}
       </section>
 
-      {/* Embedded FINKI campus / indoor map */}
+      {/* Embedded campus map (OpenStreetMap — reliable, no third-party data service) */}
       <div className="rounded-2xl overflow-hidden shadow-card border border-gray-100 bg-white">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">FINKI campus</span>
+          <a
+            href={MAP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-semibold text-finki-mid hover:underline flex items-center gap-1"
+          >
+            Detailed indoor map
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M7 17 17 7M7 7h10v10" />
+            </svg>
+          </a>
+        </div>
         <iframe
-          src={MAP_URL}
-          title="FINKI campus map"
-          className="w-full h-[70vh] min-h-[480px] border-0 block"
+          src={OSM_EMBED}
+          title="FINKI campus on OpenStreetMap"
+          className="w-full h-[60vh] min-h-[440px] border-0 block"
         />
       </div>
-      <p className="text-xs text-gray-400 text-center">
-        Map not loading? In Safari, disable “Prevent Cross-Site Tracking”, or use the{" "}
-        <a href={MAP_URL} target="_blank" rel="noopener noreferrer" className="text-finki-mid font-medium hover:underline">
-          Open full map
-        </a>{" "}
-        button above.
-      </p>
     </div>
   );
 }

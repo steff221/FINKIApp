@@ -33,6 +33,9 @@ public class ConsultationSlot {
     private String room;
 
     @Column(columnDefinition = "TEXT")
+    private String link;
+
+    @Column(columnDefinition = "TEXT")
     private String instructions;
 
     @Column(name = "scraped_at", nullable = false)

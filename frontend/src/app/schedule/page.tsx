@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 import Image from "next/image";
 import WeeklyCalendar from "@/components/schedule/WeeklyCalendar";
 import AddEntryModal from "@/components/schedule/AddEntryModal";
+import AuthModal from "@/components/ui/AuthModal";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import type { CustomEntryResponse, CustomEntryRequest } from "@/types";
 import { getCustomEntries, createCustomEntry, updateCustomEntry, deleteCustomEntry, getIcsUrl } from "@/lib/api";
 import { getAuth } from "@/lib/auth";
@@ -12,11 +14,29 @@ import { getAuth } from "@/lib/auth";
 const SWR_KEY = "/schedule/custom";
 
 export default function SchedulePage() {
-  const auth = typeof window !== "undefined" ? getAuth() : null;
+  const [auth, setAuth] = useState(() => typeof window !== "undefined" ? getAuth() : null);
+  const [showReauth, setShowReauth] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data: entries = [], isLoading } = useSWR<CustomEntryResponse[]>(
+  useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); }, []);
+
+  const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(msg);
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  useEffect(() => {
+    const onExpired = () => { setAuth(null); setShowReauth(true); };
+    window.addEventListener("finki:session-expired", onExpired);
+    return () => window.removeEventListener("finki:session-expired", onExpired);
+  }, []);
+
+  const { data: entries = [], isLoading, error: scheduleError } = useSWR<CustomEntryResponse[]>(
     auth ? SWR_KEY : null,
-    () => getCustomEntries()
+    () => getCustomEntries(),
+    { shouldRetryOnError: false }
   );
 
   // Entries on the same day whose time ranges overlap
@@ -41,18 +61,24 @@ export default function SchedulePage() {
     defaultDay: number;
     defaultStart: string;
     defaultLab: boolean;
+    prefill?: Partial<CustomEntryRequest>;
   }>({ open: false, entry: null, defaultDay: 0, defaultStart: "08:00", defaultLab: false });
 
   function openAdd(day: number, startTime: string) {
-    setModal({ open: true, entry: null, defaultDay: day, defaultStart: startTime, defaultLab: false });
+    setModal({ open: true, entry: null, defaultDay: day, defaultStart: startTime, defaultLab: false, prefill: undefined });
   }
 
   function openAddLab() {
-    setModal({ open: true, entry: null, defaultDay: 0, defaultStart: "08:00", defaultLab: true });
+    setModal({ open: true, entry: null, defaultDay: 0, defaultStart: "08:00", defaultLab: true, prefill: undefined });
   }
 
   function openEdit(entry: CustomEntryResponse) {
-    setModal({ open: true, entry, defaultDay: entry.dayOfWeek, defaultStart: entry.startTime, defaultLab: false });
+    setModal({ open: true, entry, defaultDay: entry.dayOfWeek, defaultStart: entry.startTime, defaultLab: false, prefill: undefined });
+  }
+
+  function handleDuplicate(data: CustomEntryRequest) {
+    closeModal();
+    setModal({ open: true, entry: null, defaultDay: data.dayOfWeek, defaultStart: data.startTime, defaultLab: false, prefill: data });
   }
 
   function closeModal() {
@@ -66,15 +92,17 @@ export default function SchedulePage() {
       await createCustomEntry(data);
     }
     await globalMutate(SWR_KEY);
-  }, [modal.entry]);
+    showToast(modal.entry ? "Entry updated" : "Entry added");
+  }, [modal.entry, showToast]);
 
   const handleDelete = useCallback(async () => {
     if (!modal.entry) return;
     await deleteCustomEntry(modal.entry.id);
     await globalMutate(SWR_KEY);
-  }, [modal.entry]);
+    showToast("Entry deleted");
+  }, [modal.entry, showToast]);
 
-  if (!auth) {
+  if (!auth && !showReauth) {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="text-center space-y-4">
@@ -89,7 +117,7 @@ export default function SchedulePage() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <div className="py-2">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -156,10 +184,9 @@ export default function SchedulePage() {
         {/* Legend */}
         <div className="flex flex-wrap gap-2 mb-4">
           {[
-            { label: "Lecture",  color: "bg-blue-500" },
-            { label: "Lab",      color: "bg-emerald-500" },
-            { label: "Exercise", color: "bg-violet-500" },
-            { label: "Combined", color: "bg-amber-500" },
+            { label: "Lecture",           color: "bg-blue-500" },
+            { label: "Auditory Exercise", color: "bg-violet-500" },
+            { label: "Combined",          color: "bg-amber-500" },
           ].map(({ label, color }) => (
             <span key={label} className="flex items-center gap-1.5 text-xs text-gray-500 bg-white rounded-full px-3 py-1 border border-gray-100">
               <span className={`w-2 h-2 rounded-full ${color}`} />
@@ -173,14 +200,23 @@ export default function SchedulePage() {
 
         {/* Conflict warning */}
         {conflictIds.size > 0 && (
-          <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl px-4 py-2.5 text-sm mb-4 border border-red-100">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
-              <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
-            </svg>
-            <span>
-              <span className="font-semibold">{conflictIds.size} overlapping {conflictIds.size === 1 ? "entry" : "entries"}</span>
-              {" "}— two classes are scheduled at the same time (outlined in red).
+          <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 mb-4 shadow-card border-l-4 border-l-red-500">
+            <span className="shrink-0 w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-red-600">
+                <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+              </svg>
             </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-900">
+                Scheduling conflict
+                <span className="ml-2 text-xs font-bold text-red-600 bg-red-50 rounded-full px-2 py-0.5">
+                  {conflictIds.size}
+                </span>
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Overlapping entries are outlined in red on the calendar below.
+              </p>
+            </div>
           </div>
         )}
 
@@ -192,6 +228,45 @@ export default function SchedulePage() {
               <p className="text-sm text-gray-400">Loading your schedule…</p>
             </div>
           </div>
+        ) : scheduleError ? (
+          <div className="bg-white rounded-2xl border border-gray-100 h-48 flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <p className="text-sm font-semibold text-gray-700">Failed to load your schedule</p>
+              <p className="text-xs text-gray-400">{scheduleError instanceof Error ? scheduleError.message : "Please refresh and try again."}</p>
+              <button
+                onClick={() => globalMutate(SWR_KEY)}
+                className="mt-1 text-xs text-finki-mid font-semibold hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 flex flex-col items-center justify-center py-16 gap-4">
+            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center">
+              <Image src="/Callendar.png" alt="" width={32} height={32} className="object-contain opacity-25" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-gray-700">Your schedule is empty</p>
+              <p className="text-xs text-gray-400 mt-1">Add your subjects to see them on the calendar</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={openAddLab}
+                className="flex items-center gap-1.5 bg-white text-emerald-700 border border-emerald-200 px-3.5 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-50 transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 5v14M5 12h14" /></svg>
+                Add lab
+              </button>
+              <button
+                onClick={() => openAdd(0, "08:00")}
+                className="flex items-center gap-1.5 bg-finki-navy text-white px-3.5 py-2 rounded-xl text-sm font-semibold hover:bg-finki-mid transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 5v14M5 12h14" /></svg>
+                Add subject
+              </button>
+            </div>
+          </div>
         ) : (
           <WeeklyCalendar entries={entries} conflictIds={conflictIds} onAdd={openAdd} onEdit={openEdit} />
         )}
@@ -200,14 +275,26 @@ export default function SchedulePage() {
       {modal.open && (
         <AddEntryModal
           initial={modal.entry}
+          prefill={modal.prefill}
           defaultDay={modal.defaultDay}
           defaultStart={modal.defaultStart}
           defaultLab={modal.defaultLab}
           onSave={handleSave}
           onDelete={modal.entry ? handleDelete : undefined}
+          onDuplicate={modal.entry ? handleDuplicate : undefined}
           onClose={closeModal}
         />
       )}
-    </>
+      {showReauth && <AuthModal onClose={() => setShowReauth(false)} />}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] bg-gray-900 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 pointer-events-none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          {toast}
+        </div>
+      )}
+    </ErrorBoundary>
   );
 }

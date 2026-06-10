@@ -38,8 +38,12 @@ public class TeacherMatcherService {
     @Transactional
     public void matchAll() {
         List<Teacher> edupageTeachers = teacherRepo.findUnmatchedEdupageTeachers();
+        // Only consultation-only teachers (no edupageId) are safe to delete during merge.
+        // Already-merged teachers have schedule_slot_teachers FK references and cannot be deleted.
         List<Teacher> consultationTeachers = teacherRepo.findAll()
-            .stream().filter(t -> t.getConsultationUsername() != null).toList();
+            .stream()
+            .filter(t -> t.getConsultationUsername() != null && t.getEdupageId() == null)
+            .toList();
 
         log.info("Matching {} EduPage teachers against {} consultation profiles",
             edupageTeachers.size(), consultationTeachers.size());

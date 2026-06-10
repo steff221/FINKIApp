@@ -12,9 +12,15 @@ public record ConsultationSlotResponse(
     LocalTime startTime,
     LocalTime endTime,
     String room,
-    String instructions
+    String link,
+    String instructions,
+    int enrolledCount
 ) {
     public static ConsultationSlotResponse from(ConsultationSlot cs) {
+        return from(cs, 0);
+    }
+
+    public static ConsultationSlotResponse from(ConsultationSlot cs, long count) {
         return new ConsultationSlotResponse(
             cs.getId(),
             TeacherResponse.from(cs.getTeacher()),
@@ -22,7 +28,9 @@ public record ConsultationSlotResponse(
             cs.getStartTime(),
             cs.getEndTime(),
             cs.getRoom(),
-            cs.getInstructions()
+            cs.getLink(),
+            cs.getInstructions(),
+            (int) count
         );
     }
 }

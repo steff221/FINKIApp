@@ -22,6 +22,18 @@ function authHeaders(): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function handleAuthError(status: number): never {
+  if (status === 401 || status === 403) {
+    // clearAuth is not imported here to avoid circular deps — clear manually then signal
+    localStorage.removeItem("finki_token");
+    localStorage.removeItem("finki_userId");
+    localStorage.removeItem("finki_email");
+    window.dispatchEvent(new Event("finki:session-expired"));
+    throw new Error("Session expired — please log in again.");
+  }
+  throw new Error(`HTTP ${status}`);
+}
+
 async function get<T>(path: string, params?: Record<string, string | number | null | undefined>): Promise<T> {
   const url = new URL(BASE + path, window.location.origin);
   if (params) {
@@ -30,7 +42,10 @@ async function get<T>(path: string, params?: Record<string, string | number | nu
     });
   }
   const res = await fetch(url.toString(), { headers: authHeaders() });
-  if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) handleAuthError(res.status);
+    throw new Error(`GET ${path} failed: ${res.status}`);
+  }
   return res.json() as Promise<T>;
 }
 
@@ -40,14 +55,25 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
+  if (!res.ok) handleAuthError(res.status);
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
+async function put<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(BASE + path, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) handleAuthError(res.status);
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
 async function del(path: string): Promise<void> {
   const res = await fetch(BASE + path, { method: "DELETE", headers: authHeaders() });
-  if (!res.ok) throw new Error(`DELETE ${path} failed: ${res.status}`);
+  if (!res.ok) handleAuthError(res.status);
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -103,6 +129,18 @@ export async function getConsultationsForTeacher(teacherId: number): Promise<Con
   return get(`/consultations/teacher/${teacherId}`);
 }
 
+export async function getMyConsultationBookings(): Promise<number[]> {
+  return get("/consultations/bookings/mine");
+}
+
+export async function bookConsultation(slotId: number, reason: string): Promise<void> {
+  return post(`/consultations/${slotId}/book`, { reason });
+}
+
+export async function cancelConsultationBooking(slotId: number): Promise<void> {
+  return del(`/consultations/${slotId}/book`);
+}
+
 // ── Personal schedule ─────────────────────────────────────────────────────────
 
 export async function getSchedule(): Promise<UserScheduleResponse> {
@@ -128,13 +166,7 @@ export async function createCustomEntry(data: CustomEntryRequest): Promise<Custo
 }
 
 export async function updateCustomEntry(id: number, data: CustomEntryRequest): Promise<CustomEntryResponse> {
-  const res = await fetch(`${BASE}/schedule/custom/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`PUT /schedule/custom/${id} failed: ${res.status}`);
-  return res.json();
+  return put(`/schedule/custom/${id}`, data);
 }
 
 export async function deleteCustomEntry(id: number): Promise<void> {

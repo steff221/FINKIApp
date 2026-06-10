@@ -36,7 +36,10 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/timetable/**").permitAll()
+                .requestMatchers(HttpMethod.GET,  "/api/consultations/bookings/**").authenticated()
                 .requestMatchers(HttpMethod.GET,  "/api/consultations/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/consultations/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/consultations/**").authenticated()
                 // Personal schedule and admin require authentication
                 .requestMatchers("/api/schedule/**").authenticated()
                 .requestMatchers("/api/admin/**").authenticated()

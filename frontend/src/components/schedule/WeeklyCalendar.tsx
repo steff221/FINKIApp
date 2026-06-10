@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import type { CustomEntryResponse } from "@/types";
 import { DAY_NAMES, LESSON_TYPE_LABELS, formatTime } from "@/types";
 
@@ -76,6 +76,20 @@ function layoutDay(dayEntries: CustomEntryResponse[]): Map<number, { col: number
 }
 
 export default function WeeklyCalendar({ entries, conflictIds, onAdd, onEdit }: Props) {
+  // Current time indicator
+  const now = new Date();
+  const nowH = now.getHours() + now.getMinutes() / 60;
+  const showTimeIndicator = nowH >= START_HOUR && nowH < END_HOUR;
+  const timeTop = (nowH - START_HOUR) * HOUR_HEIGHT;
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (scrollRef.current && showTimeIndicator) {
+      scrollRef.current.scrollTop = Math.max(0, timeTop - 120);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const byDay = useMemo(() => {
     const map: Record<number, CustomEntryResponse[]> = {};
     for (let i = 0; i < 5; i++) map[i] = [];
@@ -104,7 +118,8 @@ export default function WeeklyCalendar({ entries, conflictIds, onAdd, onEdit }: 
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-card overflow-hidden border border-gray-100">
+    <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-x-auto">
+      <div className="min-w-[560px]">
       {/* Day headers */}
       <div className="grid grid-cols-[56px_repeat(5,1fr)] border-b border-gray-100 bg-gray-50/60">
         <div className="py-3" />
@@ -116,7 +131,7 @@ export default function WeeklyCalendar({ entries, conflictIds, onAdd, onEdit }: 
       </div>
 
       {/* Grid body */}
-      <div className="grid grid-cols-[56px_repeat(5,1fr)] overflow-auto" style={{ maxHeight: "calc(100vh - 220px)" }}>
+      <div ref={scrollRef} className="grid grid-cols-[56px_repeat(5,1fr)] overflow-y-auto" style={{ maxHeight: "calc(100vh - 220px)" }}>
         {/* Time gutter */}
         <div className="relative" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
           {hours.map(h => (
@@ -130,6 +145,12 @@ export default function WeeklyCalendar({ entries, conflictIds, onAdd, onEdit }: 
               </span>
             </div>
           ))}
+          {showTimeIndicator && (
+            <div
+              className="absolute right-2 w-2 h-2 rounded-full bg-red-500 z-20 -translate-y-1 pointer-events-none"
+              style={{ top: timeTop }}
+            />
+          )}
         </div>
 
         {/* Day columns */}
@@ -160,6 +181,14 @@ export default function WeeklyCalendar({ entries, conflictIds, onAdd, onEdit }: 
 
             {/* Hover add hint */}
             <div className="absolute inset-0 group-hover:bg-blue-50/30 transition-colors pointer-events-none" />
+
+            {/* Current-time indicator */}
+            {showTimeIndicator && (
+              <div
+                className="absolute left-0 right-0 border-t-2 border-red-400 z-20 pointer-events-none"
+                style={{ top: timeTop }}
+              />
+            )}
 
             {/* Entries */}
             {byDay[day].map(entry => {
@@ -212,6 +241,7 @@ export default function WeeklyCalendar({ entries, conflictIds, onAdd, onEdit }: 
             })}
           </div>
         ))}
+      </div>
       </div>
     </div>
   );

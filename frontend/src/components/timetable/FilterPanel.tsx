@@ -112,7 +112,7 @@ export default function FilterPanel({ filters, options, onChange, onReset }: Pro
             className={selectCls}
           >
             <option value="">All types</option>
-            {Object.entries(LESSON_TYPE_LABELS).map(([k, v]) => (
+            {Object.entries(LESSON_TYPE_LABELS).filter(([k]) => k !== "LAB").map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>

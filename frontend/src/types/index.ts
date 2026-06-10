@@ -46,7 +46,9 @@ export interface ConsultationSlotResponse {
   startTime: string;
   endTime: string;
   room: string | null;
+  link: string | null;
   instructions: string | null;
+  enrolledCount: number;
 }
 
 export interface TeacherWithSlotsResponse {
@@ -127,8 +129,8 @@ export function editionLabel(num: string): string {
 
 export const LESSON_TYPE_LABELS: Record<string, string> = {
   LECTURE:  "Lecture",
-  LAB:      "Lab",
-  EXERCISE: "Exercise",
+  LAB:      "Auditory Exercise",
+  EXERCISE: "Auditory Exercise",
   COMBINED: "Combined",
 };
 

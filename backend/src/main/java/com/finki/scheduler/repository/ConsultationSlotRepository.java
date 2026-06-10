@@ -10,7 +10,13 @@ import java.util.List;
 
 public interface ConsultationSlotRepository extends JpaRepository<ConsultationSlot, Long> {
 
-    List<ConsultationSlot> findByTeacherIdOrderByDateAscStartTimeAsc(Long teacherId);
+    @Query("""
+        SELECT c FROM ConsultationSlot c
+        JOIN FETCH c.teacher t
+        WHERE t.id = :teacherId
+        ORDER BY c.date ASC, c.startTime ASC
+        """)
+    List<ConsultationSlot> findByTeacherIdOrderByDateAscStartTimeAsc(@Param("teacherId") Long teacherId);
 
     @Modifying
     @Query("DELETE FROM ConsultationSlot c WHERE c.teacher.id = :teacherId")

@@ -15,29 +15,33 @@ public class ConsultationController {
 
     private final ConsultationService consultationService;
 
-    /** All professors with their upcoming slots, optionally filtered by name. */
     @GetMapping
     public List<TeacherWithSlotsResponse> getAll(@RequestParam(required = false) String q) {
         if (q != null && !q.isBlank()) {
-            // Search mode: return flat slots, grouped by teacher on the frontend
             var slots = consultationService.search(q);
             return slots.stream()
                 .collect(java.util.stream.Collectors.groupingBy(cs -> cs.getTeacher()))
                 .entrySet().stream()
-                .map(e -> TeacherWithSlotsResponse.from(e.getKey(), e.getValue()))
+                .map(e -> TeacherWithSlotsResponse.from(
+                    e.getKey(),
+                    e.getValue(),
+                    consultationService::countBookings))
                 .toList();
         }
         return consultationService.getAllGrouped().entrySet().stream()
-            .map(e -> TeacherWithSlotsResponse.from(e.getKey(), e.getValue()))
+            .map(e -> TeacherWithSlotsResponse.from(
+                e.getKey(),
+                e.getValue(),
+                consultationService::countBookings))
             .sorted(java.util.Comparator.comparing(r -> r.teacher().cyrillicName() != null
                 ? r.teacher().cyrillicName() : ""))
             .toList();
     }
 
-    /** Slots for a specific teacher — used for inline display in schedule builder. */
     @GetMapping("/teacher/{teacherId}")
     public List<ConsultationSlotResponse> getForTeacher(@PathVariable Long teacherId) {
-        return consultationService.getSlotsForTeacher(teacherId)
-            .stream().map(ConsultationSlotResponse::from).toList();
+        return consultationService.getSlotsForTeacher(teacherId).stream()
+            .map(s -> ConsultationSlotResponse.from(s, consultationService.countBookings(s.getId())))
+            .toList();
     }
 }

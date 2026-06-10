@@ -11,6 +11,23 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 const LAB_ROOMS = ["2", "3", "13", "12", "117", "200b", "200v"];
 const labLabel = (n: string) => `Lab ${n}`;
 
+// Laboratory assistants per subject, suggested in the "Add lab" flow.
+// Matched by keywords (case/spacing/spelling tolerant) so both the exact scraped
+// name and loosely-typed variants resolve to the right assistant.
+const LAB_ASSISTANT_RULES: { keywords: string[]; assistants: string[] }[] = [
+  { keywords: ["дизајн", "интеракциј", "компјутер"], assistants: ["Христина Здравеска"] },
+];
+// Assistants explicitly mapped to this subject ([] if none match)
+function matchedLabAssistants(title: string): string[] {
+  const t = title.toLowerCase();
+  for (const rule of LAB_ASSISTANT_RULES) {
+    if (rule.keywords.every(k => t.includes(k))) return rule.assistants;
+  }
+  return [];
+}
+
+// Suggestions for the lab-mode assistant field (only explicitly mapped ones)
+
 const COLORS = [
   { value: "#3b82f6", label: "Blue",    tw: "bg-blue-500" },
   { value: "#10b981", label: "Green",   tw: "bg-emerald-500" },
@@ -24,32 +41,37 @@ const COLORS = [
 
 interface Props {
   initial?: CustomEntryResponse | null;
+  prefill?: Partial<CustomEntryRequest>;
   defaultDay?: number;
   defaultStart?: string;
   defaultLab?: boolean;
   onSave: (data: CustomEntryRequest) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onDuplicate?: (data: CustomEntryRequest) => void;
   onClose: () => void;
 }
 
 const inputCls = "w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400 transition-all";
 const labelCls = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1";
 
-export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = "08:00", defaultLab = false, onSave, onDelete, onClose }: Props) {
-  const [title,     setTitle]     = useState(initial?.title ?? "");
-  const [professor, setProfessor] = useState(initial?.professor ?? "");
-  const [entryType, setEntryType] = useState<"LECTURE" | "LAB" | "EXERCISE" | "COMBINED">(initial?.entryType ?? (defaultLab ? "LAB" : "LECTURE"));
-  const [day,       setDay]       = useState(initial?.dayOfWeek ?? defaultDay);
-  const [start,     setStart]     = useState(initial?.startTime?.substring(0,5) ?? defaultStart);
-  const [end,       setEnd]       = useState(initial?.endTime?.substring(0,5) ?? "");
-  const [room,      setRoom]      = useState(initial?.room ?? (defaultLab ? labLabel(LAB_ROOMS[0]) : ""));
-  const [color,     setColor]     = useState(initial?.color ?? COLORS[0].value);
+export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaultStart = "08:00", defaultLab = false, onSave, onDelete, onDuplicate, onClose }: Props) {
+  const [title,     setTitle]     = useState(initial?.title     ?? prefill?.title     ?? "");
+  const [professor, setProfessor] = useState(initial?.professor ?? prefill?.professor ?? "");
+  const [entryType, setEntryType] = useState<"LECTURE" | "LAB" | "EXERCISE" | "COMBINED">((initial?.entryType ?? prefill?.entryType ?? (defaultLab ? "LAB" : "LECTURE")) as "LECTURE" | "LAB" | "EXERCISE" | "COMBINED");
+  const [day,       setDay]       = useState(initial?.dayOfWeek ?? prefill?.dayOfWeek ?? defaultDay);
+  const [start,     setStart]     = useState(initial?.startTime?.substring(0,5) ?? prefill?.startTime?.substring(0,5) ?? defaultStart);
+  const [end,       setEnd]       = useState(initial?.endTime?.substring(0,5)   ?? prefill?.endTime?.substring(0,5)   ?? "");
+  const [room,      setRoom]      = useState(initial?.room  ?? prefill?.room  ?? (defaultLab ? labLabel(LAB_ROOMS[0]) : ""));
+  const [color,     setColor]     = useState(initial?.color ?? prefill?.color ?? COLORS[0].value);
   const [saving,    setSaving]    = useState(false);
+  const [saved,     setSaved]     = useState(false);
   const [error,     setError]     = useState<string | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); }, []);
   const [sessionIdx, setSessionIdx] = useState(0);
 
   // Pull scraped subjects + teachers from the timetable filters (public endpoint)
-  const { data: filters } = useSWR("/timetable/filters", () => getFilters());
+  const { data: filters, isLoading: filtersLoading, error: filtersError } = useSWR("/timetable/filters", () => getFilters());
   // Pull all timetable slots (every edition) so we can link each subject to its teachers/sessions
   const { data: slots } = useSWR("/timetable/slots/all", () => getSlots({}, { allEditions: true }));
 
@@ -110,7 +132,8 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
     setStart(slot.startTime.substring(0, 5));
     setEnd(slot.endTime.substring(0, 5));
     if (slot.classroom?.name) setRoom(slot.classroom.name);
-    setEntryType(slot.subject.lessonType);
+    // Don't override explicit lab mode — user made a deliberate choice
+    if (entryType !== "LAB") setEntryType(slot.subject.lessonType);
   }
 
   // Human label for a session option, e.g. "Tuesday 08:00–10:45 · 1г-СИИС · Барака 1"
@@ -128,14 +151,17 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
     return Array.from(set).sort((a, b) => a.localeCompare(b, "mk"));
   }, [filters]);
 
-  // Professor suggestions — narrowed to the selected subject's teachers when available
+  // Memoized so matchedLabAssistants(title) is computed once per title change
+  const matchedAssistants = useMemo(() => matchedLabAssistants(title), [title]);
+
+  // Professor suggestions — narrowed to the selected subject's teachers when available,
+  // plus any lab assistants explicitly mapped to that subject
   const teacherOptions = useMemo(() => {
     const forSubject = subjectTeacherMap.get(title);
-    if (forSubject && forSubject.size > 0) {
-      return Array.from(forSubject).sort((a, b) => a.localeCompare(b, "mk"));
-    }
-    return allTeachers;
-  }, [title, subjectTeacherMap, allTeachers]);
+    const base = forSubject && forSubject.size > 0 ? Array.from(forSubject) : allTeachers;
+    const merged = Array.from(new Set([...base, ...matchedAssistants]));
+    return merged.sort((a, b) => a.localeCompare(b, "mk"));
+  }, [title, subjectTeacherMap, allTeachers, matchedAssistants]);
 
   // All real sessions for the currently chosen subject + professor
   const matchingSlots = useMemo(
@@ -143,7 +169,8 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
     [title, professor, subjectTeacherSlots]
   );
 
-  const isSubjectMatched = subjectTeacherMap.has(title) && (subjectTeacherMap.get(title)?.size ?? 0) > 0;
+  const subjectHasTeachers = (subjectTeacherMap.get(title)?.size ?? 0) > 0;
+  const isSubjectMatched = subjectHasTeachers || matchedAssistants.length > 0;
   const isAutoFilled = matchingSlots.length > 0;
 
   const isLab = entryType === "LAB";
@@ -155,21 +182,17 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
     return opts;
   }, [isLab, room]);
 
-  function enterLabMode() {
-    setEntryType("LAB");
-    if (!room || !labOptions.includes(room)) setRoom(labLabel(LAB_ROOMS[0]));
-  }
-
   function exitLabMode() {
     setEntryType("LECTURE");
-    if (room.startsWith("Lab ")) setRoom("");   // clear the lab room when leaving lab mode
+    if (room && LAB_ROOMS.map(labLabel).includes(room)) setRoom("");
   }
 
   function handleTitleChange(value: string) {
     setTitle(value);
     // If the typed value exactly matches a scraped subject, adopt its lesson type
+    // but don't override explicit lab mode — user made a deliberate choice
     const matchedType = subjectTypeMap.get(value);
-    if (matchedType) setEntryType(matchedType);
+    if (matchedType && entryType !== "LAB") setEntryType(matchedType);
     // Clear professor if it no longer teaches the newly selected subject
     const teachers = subjectTeacherMap.get(value);
     if (teachers && teachers.size > 0 && professor && !teachers.has(professor)) {
@@ -210,11 +233,14 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
     if (!title.trim()) { setError("Subject name is required."); return; }
     if (end <= start)   { setError("End time must be after start time."); return; }
     setSaving(true);
+    setError(null);
     try {
       await onSave({ title, professor, entryType, dayOfWeek: day, startTime: start, endTime: end, room, color });
-      onClose();
-    } catch {
-      setError("Failed to save. Please try again.");
+      setSaved(true);
+      closeTimerRef.current = setTimeout(onClose, 600);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      setError(msg.includes("Session expired") ? msg : "Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -237,7 +263,7 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
         role="dialog"
         aria-modal="true"
         aria-label={initial ? "Edit entry" : "Add to calendar"}
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -271,11 +297,18 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
             <datalist id="finki-subjects">
               {subjectOptions.map(s => <option key={s} value={s} />)}
             </datalist>
-            {subjectOptions.length > 0 && (
+            {filtersLoading ? (
+              <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-1.5">
+                <span className="inline-block w-2.5 h-2.5 border border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+                Loading subjects…
+              </p>
+            ) : filtersError ? (
+              <p className="text-[11px] text-red-400 mt-1">Could not load subject list — you can still type a custom name</p>
+            ) : subjectOptions.length > 0 ? (
               <p className="text-[11px] text-gray-400 mt-1">
                 {subjectOptions.length} subjects from the FINKI timetable — or type a custom one
               </p>
-            )}
+            ) : null}
           </div>
 
           {/* Professor */}
@@ -283,24 +316,33 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
             <label className={labelCls}>Professor / Assistant</label>
             <input
               className={inputCls}
-              placeholder={isSubjectMatched ? "Professors for this subject…" : "Type the professor / assistant…"}
+              placeholder={
+                isLab ? "Lab assistant…"
+                : isSubjectMatched ? "Professors for this subject…"
+                : "Type the professor / assistant…"
+              }
               value={professor}
               onChange={e => handleProfessorChange(e.target.value)}
-              list={isSubjectMatched ? "finki-teachers" : undefined}
+              list={isLab ? "finki-lab-assistants" : isSubjectMatched ? "finki-teachers" : undefined}
               name="finki-professor-search"
               autoComplete="off"
               data-lpignore="true"
               data-1p-ignore="true"
               data-form-type="other"
             />
-            {isSubjectMatched && (
+            {isSubjectMatched && !isLab && (
               <datalist id="finki-teachers">
                 {teacherOptions.map(t => <option key={t} value={t} />)}
               </datalist>
             )}
-            {isSubjectMatched && (
+            {isLab && (
+              <datalist id="finki-lab-assistants">
+                {matchedAssistants.map((t: string) => <option key={t} value={t} />)}
+              </datalist>
+            )}
+            {subjectHasTeachers && !isLab && (
               <p className="text-[11px] text-blue-500 mt-1">
-                Showing {teacherOptions.length} professor{teacherOptions.length === 1 ? "" : "s"} who teach “{title}”
+                Showing {teacherOptions.length} professor{teacherOptions.length === 1 ? "" : "s"} who teach "{title}"
               </p>
             )}
           </div>
@@ -337,22 +379,18 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
           {/* Type / Lab + Day */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="flex items-center justify-between mb-1 h-4">
+              <div className="flex items-center mb-1 h-4">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Type
                 </label>
-                <button
-                  type="button"
-                  onClick={isLab ? exitLabMode : enterLabMode}
-                  className="text-[11px] font-semibold text-finki-mid hover:underline"
-                >
-                  {isLab ? "Use type" : "+ Add lab"}
-                </button>
               </div>
               {isLab ? (
-                <div className={`${inputCls} flex items-center gap-2 bg-emerald-50 border-emerald-200`}>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-sm font-semibold text-emerald-700">Lab session</span>
+                <div className={`${inputCls} flex items-center gap-2 bg-violet-50 border-violet-200`}>
+                  <span className="w-2 h-2 rounded-full bg-violet-500" />
+                  <span className="text-sm font-semibold text-violet-700 flex-1">{LESSON_TYPE_LABELS.LAB}</span>
+                  <button type="button" onClick={exitLabMode} className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">
+                    Change
+                  </button>
                 </div>
               ) : (
                 <select className={inputCls} value={entryType} onChange={e => setEntryType(e.target.value as "LECTURE" | "EXERCISE" | "COMBINED")}>
@@ -384,7 +422,7 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
 
           {/* Room — a lab-room dropdown in lab mode, free text otherwise */}
           <div>
-            <label className={labelCls}>{isLab ? "Lab room" : "Room (optional)"}</label>
+            <label className={labelCls}>{isLab ? "Room" : "Room (optional)"}</label>
             {isLab ? (
               <select className={inputCls} value={room} onChange={e => setRoom(e.target.value)}>
                 {labOptions.map(l => <option key={l} value={l}>{l}</option>)}
@@ -417,7 +455,14 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
             </div>
           </div>
 
-          {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 flex items-center gap-2">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+              </svg>
+              {error}
+            </p>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-2 pt-1">
@@ -425,22 +470,44 @@ export default function AddEntryModal({ initial, defaultDay = 0, defaultStart = 
               <button
                 type="button"
                 onClick={handleDelete}
-                disabled={saving}
+                disabled={saving || saved}
                 className="px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
               >
                 Delete
               </button>
             )}
+            {onDuplicate && (
+              <button
+                type="button"
+                onClick={() => onDuplicate({ title, professor, entryType, dayOfWeek: day, startTime: start, endTime: end, room, color })}
+                disabled={saving || saved}
+                className="px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors font-medium flex items-center gap-1.5"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Duplicate
+              </button>
+            )}
             <div className="ml-auto flex gap-2">
-              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors">
+              <button type="button" onClick={onClose} disabled={saving || saved} className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-40">
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={saving}
-                className="px-4 py-2 rounded-lg text-sm bg-finki-navy text-white font-semibold hover:bg-finki-mid transition-colors disabled:opacity-50"
+                disabled={saving || saved}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                  saved
+                    ? "bg-emerald-500 text-white"
+                    : "bg-finki-navy text-white hover:bg-finki-mid disabled:opacity-50"
+                }`}
               >
-                {saving ? "Saving…" : initial ? "Save changes" : "Add entry"}
+                {saving && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+                {saved
+                  ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6 9 17l-5-5"/></svg> Saved</>
+                  : saving ? "Saving…"
+                  : initial ? "Save changes"
+                  : "Add entry"}
               </button>
             </div>
           </div>
