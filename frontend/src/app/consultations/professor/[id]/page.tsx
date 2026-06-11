@@ -53,7 +53,7 @@ export default function ProfessorConsultationsPage({ params }: Props) {
   );
   const { data: mySlots } = useSWR<number[]>(mineKey, () => getMyConsultationBookings());
 
-  const teacherName = slots?.[0]?.teacher?.cyrillicName ?? (nameFromUrl || "Профeсор");
+  const teacherName = slots?.[0]?.teacher?.cyrillicName ?? (nameFromUrl || "Професор");
   const female      = isFemale(teacherName);
 
   const [reasons, setReasons] = useState<Record<number, string>>({});

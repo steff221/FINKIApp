@@ -92,14 +92,14 @@ export default function SchedulePage() {
       await createCustomEntry(data);
     }
     await globalMutate(SWR_KEY);
-    showToast(modal.entry ? "Entry updated" : "Entry added");
+    showToast(modal.entry ? "Записот е ажуриран" : "Записот е додаден");
   }, [modal.entry, showToast]);
 
   const handleDelete = useCallback(async () => {
     if (!modal.entry) return;
     await deleteCustomEntry(modal.entry.id);
     await globalMutate(SWR_KEY);
-    showToast("Entry deleted");
+    showToast("Записот е избришан");
   }, [modal.entry, showToast]);
 
   if (!auth && !showReauth) {
@@ -109,8 +109,8 @@ export default function SchedulePage() {
           <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto">
             <Image src="/Callendar.png" alt="" width={32} height={32} className="object-contain opacity-70" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">My Schedule</h1>
-          <p className="text-gray-500 text-sm">Please log in to manage your personal calendar.</p>
+          <h1 className="text-xl font-bold text-gray-900">Мој Распоред</h1>
+          <p className="text-gray-500 text-sm">Најавете се за да го управувате вашиот личен календар.</p>
         </div>
       </div>
     );
@@ -126,11 +126,11 @@ export default function SchedulePage() {
               <Image src="/Callendar.png" alt="" width={20} height={20} className="object-contain brightness-0 invert" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">My Schedule</h1>
+              <h1 className="text-xl font-bold text-gray-900">Мој Распоред</h1>
               <p className="text-sm text-gray-500">
                 {entries.length === 0
-                  ? "Click any time slot to add a subject"
-                  : `${entries.length} entr${entries.length === 1 ? "y" : "ies"}`}
+                  ? "Кликнете временски слот за да додадете предмет"
+                  : `${entries.length} ${entries.length === 1 ? "запис" : "записи"}`}
               </p>
             </div>
           </div>
@@ -139,7 +139,7 @@ export default function SchedulePage() {
             {entries.length > 0 && (
               <a
                 href={getIcsUrl()}
-                title="Download your schedule as a calendar file (.ics)"
+                title="Превземете го вашиот распоред како .ics датотека"
                 className="flex items-center gap-2 bg-white text-gray-600 border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 hover:text-finki-navy transition-colors shadow-sm"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -147,7 +147,7 @@ export default function SchedulePage() {
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                Export
+                Превземи
               </a>
             )}
             <button
@@ -161,7 +161,7 @@ export default function SchedulePage() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                Add lab
+                Додај лаб
               </span>
             </button>
             <button
@@ -175,7 +175,7 @@ export default function SchedulePage() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                Add subject
+                Додај предмет
               </span>
             </button>
           </div>
@@ -184,9 +184,10 @@ export default function SchedulePage() {
         {/* Legend */}
         <div className="flex flex-wrap gap-2 mb-4">
           {[
-            { label: "Lecture",           color: "bg-blue-500" },
-            { label: "Auditory Exercise", color: "bg-violet-500" },
-            { label: "Combined",          color: "bg-amber-500" },
+            { label: "Предавање",             color: "bg-blue-500" },
+            { label: "Аудиториски вежби",   color: "bg-violet-500" },
+            { label: "Лабораториски вежби", color: "bg-emerald-500" },
+            { label: "Комбинирано",         color: "bg-amber-500" },
           ].map(({ label, color }) => (
             <span key={label} className="flex items-center gap-1.5 text-xs text-gray-500 bg-white rounded-full px-3 py-1 border border-gray-100">
               <span className={`w-2 h-2 rounded-full ${color}`} />
@@ -194,7 +195,7 @@ export default function SchedulePage() {
             </span>
           ))}
           <span className="text-xs text-gray-400 ml-auto self-center hidden sm:block">
-            Click a slot to add · Click an entry to edit
+            Кликнете слот за да додадете · Кликнете запис за да уредите
           </span>
         </div>
 
@@ -208,13 +209,13 @@ export default function SchedulePage() {
             </span>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-gray-900">
-                Scheduling conflict
+                Конфликт во распоред
                 <span className="ml-2 text-xs font-bold text-red-600 bg-red-50 rounded-full px-2 py-0.5">
                   {conflictIds.size}
                 </span>
               </p>
               <p className="text-xs text-gray-500 mt-0.5">
-                Overlapping entries are outlined in red on the calendar below.
+                Преклопувачките записи се означени со црвена на календарот подолу.
               </p>
             </div>
           </div>
@@ -225,19 +226,19 @@ export default function SchedulePage() {
           <div className="bg-white rounded-2xl border border-gray-100 h-96 flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
-              <p className="text-sm text-gray-400">Loading your schedule…</p>
+              <p className="text-sm text-gray-400">Се вчитува вашиот распоред…</p>
             </div>
           </div>
         ) : scheduleError ? (
           <div className="bg-white rounded-2xl border border-gray-100 h-48 flex items-center justify-center">
             <div className="text-center space-y-2">
-              <p className="text-sm font-semibold text-gray-700">Failed to load your schedule</p>
-              <p className="text-xs text-gray-400">{scheduleError instanceof Error ? scheduleError.message : "Please refresh and try again."}</p>
+              <p className="text-sm font-semibold text-gray-700">Грешка при вчитување на распоредот</p>
+              <p className="text-xs text-gray-400">{scheduleError instanceof Error ? scheduleError.message : "Освежете ја страницата и обидете се повторно."}</p>
               <button
                 onClick={() => globalMutate(SWR_KEY)}
                 className="mt-1 text-xs text-finki-mid font-semibold hover:underline"
               >
-                Retry
+                Обиди се повторно
               </button>
             </div>
           </div>
@@ -247,8 +248,8 @@ export default function SchedulePage() {
               <Image src="/Callendar.png" alt="" width={32} height={32} className="object-contain opacity-25" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-semibold text-gray-700">Your schedule is empty</p>
-              <p className="text-xs text-gray-400 mt-1">Add your subjects to see them on the calendar</p>
+              <p className="text-sm font-semibold text-gray-700">Вашиот распоред е празен</p>
+              <p className="text-xs text-gray-400 mt-1">Додајте предмети за да ги видите на календарот</p>
             </div>
             <div className="flex gap-2">
               <button
@@ -256,14 +257,14 @@ export default function SchedulePage() {
                 className="flex items-center gap-1.5 bg-white text-emerald-700 border border-emerald-200 px-3.5 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-50 transition-colors"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 5v14M5 12h14" /></svg>
-                Add lab
+                Додај лаб
               </button>
               <button
                 onClick={() => openAdd(0, "08:00")}
                 className="flex items-center gap-1.5 bg-finki-navy text-white px-3.5 py-2 rounded-xl text-sm font-semibold hover:bg-finki-mid transition-colors"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 5v14M5 12h14" /></svg>
-                Add subject
+                Додај предмет
               </button>
             </div>
           </div>

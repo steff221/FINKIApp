@@ -12,7 +12,7 @@ export default function SchedulePanel({ schedule }: Props) {
   if (!data) {
     return (
       <div className="bg-white rounded-xl shadow-panel p-5 text-sm text-gray-400 text-center">
-        Loading schedule…
+        Се вчитува…
       </div>
     );
   }
@@ -30,7 +30,7 @@ export default function SchedulePanel({ schedule }: Props) {
             <rect x="3" y="4" width="18" height="18" rx="2" />
             <path d="M16 2v4M8 2v4M3 10h18" />
           </svg>
-          <h2 className="font-semibold text-sm text-gray-800">My Schedule</h2>
+          <h2 className="font-semibold text-sm text-gray-800">Мој Распоред</h2>
           {data.slots.length > 0 && (
             <span className="bg-finki-mid text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center leading-none">
               {data.slots.length}
@@ -48,7 +48,7 @@ export default function SchedulePanel({ schedule }: Props) {
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Export .ics
+            Превземи .ics
           </a>
         )}
       </div>
@@ -63,7 +63,7 @@ export default function SchedulePanel({ schedule }: Props) {
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
           <p className="text-xs text-red-700 font-medium">
-            {data.conflicts.length} time conflict{data.conflicts.length > 1 ? "s" : ""} detected
+            {data.conflicts.length} временск{data.conflicts.length > 1 ? "и конфликти" : "и конфликт"} забележан{data.conflicts.length > 1 ? "и" : ""}
           </p>
         </div>
       )}
@@ -78,8 +78,8 @@ export default function SchedulePanel({ schedule }: Props) {
               <path d="M16 2v4M8 2v4M3 10h18" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-gray-600">Your schedule is empty</p>
-          <p className="text-xs text-gray-400 mt-1">Add classes from the timetable</p>
+          <p className="text-sm font-medium text-gray-600">Вашиот распоред е празен</p>
+          <p className="text-xs text-gray-400 mt-1">Додајте часови од распоредот</p>
         </div>
       ) : (
         <div className="p-4 space-y-5 overflow-y-auto">
@@ -119,7 +119,7 @@ export default function SchedulePanel({ schedule }: Props) {
                           <button
                             onClick={() => remove(slot.id)}
                             className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Remove"
+                            title="Отстрани"
                           >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                               stroke="currentColor" strokeWidth="2.5">

@@ -4,15 +4,15 @@ import NavBar from "@/components/ui/NavBar";
 import PageTransition from "@/components/ui/PageTransition";
 
 export const metadata: Metadata = {
-  title: "FINKI Scheduler",
-  description: "Unified timetable and consultation schedule for FINKI students",
+  title: "ФИНКИ Распоред",
+  description: "Распоред на часови, консултации и карта на кампусот за студентите на ФИНКИ",
   manifest: "/manifest.json",
   themeColor: "#0d1b40",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="mk">
       <body>
         <NavBar />
         <main className="max-w-7xl mx-auto px-6 py-8">

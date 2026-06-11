@@ -37,8 +37,8 @@ export default function TimetableGrid({ slots, schedule }: Props) {
             <path d="M16 2v4M8 2v4M3 10h18" />
           </svg>
         </div>
-        <p className="font-medium text-gray-600">No slots match the current filters</p>
-        <p className="text-sm text-gray-400 mt-1">Try adjusting or resetting the filters</p>
+        <p className="font-medium text-gray-600">Нема часови за избраните филтри</p>
+        <p className="text-sm text-gray-400 mt-1">Обидете се да ги промените или ресетирате филтрите</p>
       </div>
     );
   }
@@ -135,7 +135,7 @@ export default function TimetableGrid({ slots, schedule }: Props) {
                                   </span>
                                   {hasConflict && (
                                     <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
-                                      Conflict
+                                      Конфликт
                                     </span>
                                   )}
                                 </div>
@@ -211,7 +211,7 @@ export default function TimetableGrid({ slots, schedule }: Props) {
                                       : "bg-white text-finki-mid border-gray-200 hover:border-finki-mid hover:bg-blue-50"
                                   }`}
                                 >
-                                  {inSchedule ? "✓ Added" : "+ Add"}
+                                  {inSchedule ? "✓ Додадено" : "+ Додај"}
                                 </button>
                               )}
                             </div>

@@ -4,29 +4,29 @@ import Image from "next/image";
 const CARDS = [
   {
     href: "/timetable",
-    title: "Timetable",
-    desc: "Browse and filter every class across both semesters.",
+    title: "Распоред",
+    desc: "Прегледајте и филтрирајте ги сите часови за двата семестри.",
     img: "/Subject.png",
     chip: "bg-blue-50",
   },
   {
     href: "/consultations",
-    title: "Consultations",
-    desc: "Professor office hours for the week ahead.",
+    title: "Консултации",
+    desc: "Термините за консултации на профeсорите за тековната недела.",
     img: "/Proffessor.png",
     chip: "bg-violet-50",
   },
   {
     href: "/schedule",
-    title: "My Schedule",
-    desc: "Build your own weekly calendar and export it.",
+    title: "Мој Распоред",
+    desc: "Изградете ваш личен неделен календар и извезете го.",
     img: "/Callendar.png",
     chip: "bg-emerald-50",
   },
   {
     href: "/maps",
-    title: "Maps",
-    desc: "Find rooms, labs and amphitheatres on campus.",
+    title: "Карта",
+    desc: "Пронајдете простории, лаборатории и амфитеатри на кампусот.",
     img: "/FINKI_logo-removebg-preview.png",
     chip: "bg-amber-50",
   },
@@ -38,11 +38,10 @@ export default function Home() {
       {/* Hero */}
       <section className="text-center py-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-finki-navy tracking-tight">
-          FINKI Scheduler
+          ФИНКИ Распоред
         </h1>
         <p className="text-gray-500 mt-3 max-w-xl mx-auto">
-          One place for your timetable, consultations, a customizable weekly calendar,
-          and the campus map.
+          Едно место за вашиот распоред, консултации, личен неделен календар и карта на кампусот.
         </p>
       </section>
 

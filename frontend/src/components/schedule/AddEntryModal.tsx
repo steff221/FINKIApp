@@ -182,10 +182,6 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
     return opts;
   }, [isLab, room]);
 
-  function exitLabMode() {
-    setEntryType("LECTURE");
-    if (room && LAB_ROOMS.map(labLabel).includes(room)) setRoom("");
-  }
 
   function handleTitleChange(value: string) {
     setTitle(value);
@@ -230,8 +226,8 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) { setError("Subject name is required."); return; }
-    if (end <= start)   { setError("End time must be after start time."); return; }
+    if (!title.trim()) { setError("Името на предметот е задолжително."); return; }
+    if (end <= start)   { setError("Крајното врeme мора да биде после почетното."); return; }
     setSaving(true);
     setError(null);
     try {
@@ -240,7 +236,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
       closeTimerRef.current = setTimeout(onClose, 600);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
-      setError(msg.includes("Session expired") ? msg : "Failed to save. Please try again.");
+      setError(msg.includes("Session expired") ? msg : "Грешка при зачувување. Обидете се повторно.");
     } finally {
       setSaving(false);
     }
@@ -250,7 +246,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
     if (!onDelete) return;
     setSaving(true);
     try { await onDelete(); onClose(); }
-    catch { setError("Failed to delete."); }
+    catch { setError("Грешка при бришење."); }
     finally { setSaving(false); }
   }
 
@@ -262,13 +258,13 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={initial ? "Edit entry" : "Add to calendar"}
+        aria-label={initial ? "Уреди запис" : "Додај во календар"}
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="font-bold text-gray-900 text-base">
-            {initial ? "Edit entry" : "Add to calendar"}
+            {initial ? "Уреди запис" : "Додај во календар"}
           </h2>
           <button onClick={onClose} className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -280,10 +276,10 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
         <form onSubmit={handleSubmit} className="p-5 space-y-4" autoComplete="off">
           {/* Subject */}
           <div>
-            <label className={labelCls}>Subject *</label>
+            <label className={labelCls}>Предмет *</label>
             <input
               className={inputCls}
-              placeholder="Search FINKI subjects or type your own…"
+              placeholder="Пребарај ФИНКИ предмети или внесете свој…"
               value={title}
               onChange={e => handleTitleChange(e.target.value)}
               list="finki-subjects"
@@ -300,26 +296,26 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
             {filtersLoading ? (
               <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-1.5">
                 <span className="inline-block w-2.5 h-2.5 border border-gray-300 border-t-gray-500 rounded-full animate-spin" />
-                Loading subjects…
+                Се вчитуваат предметите…
               </p>
             ) : filtersError ? (
-              <p className="text-[11px] text-red-400 mt-1">Could not load subject list — you can still type a custom name</p>
+              <p className="text-[11px] text-red-400 mt-1">Не може да се вчита листата — може да внесете свое имe</p>
             ) : subjectOptions.length > 0 ? (
               <p className="text-[11px] text-gray-400 mt-1">
-                {subjectOptions.length} subjects from the FINKI timetable — or type a custom one
+                {subjectOptions.length} предмети од ФИНКИ распоредот — или внесете свој
               </p>
             ) : null}
           </div>
 
           {/* Professor */}
           <div>
-            <label className={labelCls}>Professor / Assistant</label>
+            <label className={labelCls}>Предавач / Асистент</label>
             <input
               className={inputCls}
               placeholder={
-                isLab ? "Lab assistant…"
-                : isSubjectMatched ? "Professors for this subject…"
-                : "Type the professor / assistant…"
+                isLab ? "Лабораториски асистент…"
+                : isSubjectMatched ? "Предавачи за овој предмет…"
+                : "Внесете предавач / асистент…"
               }
               value={professor}
               onChange={e => handleProfessorChange(e.target.value)}
@@ -342,7 +338,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
             )}
             {subjectHasTeachers && !isLab && (
               <p className="text-[11px] text-blue-500 mt-1">
-                Showing {teacherOptions.length} professor{teacherOptions.length === 1 ? "" : "s"} who teach "{title}"
+                {teacherOptions.length} предавач{teacherOptions.length === 1 ? "" : "и"} за „{title}"
               </p>
             )}
           </div>
@@ -350,7 +346,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
           {/* Class session picker — shown when this prof teaches the subject more than once */}
           {matchingSlots.length > 1 && (
             <div>
-              <label className={labelCls}>Class session ({matchingSlots.length})</label>
+              <label className={labelCls}>Термин ({matchingSlots.length})</label>
               <select
                 className={inputCls}
                 value={sessionIdx}
@@ -361,7 +357,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
                 ))}
               </select>
               <p className="text-[11px] text-gray-400 mt-1">
-                Taught on multiple days / groups — pick the one you attend.
+                Предметот се предава во повеќе термини — изберете го вашиот.
               </p>
             </div>
           )}
@@ -372,7 +368,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M20 6 9 17l-5-5" />
               </svg>
-              Day, time &amp; room auto-filled from the FINKI timetable — edit if needed.
+              Ден, врeme и просторија автоматски пополнети од ФИНКИ распоредот — уредете ако е потребно.
             </div>
           )}
 
@@ -381,16 +377,13 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
             <div>
               <div className="flex items-center mb-1 h-4">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Type
+                  Тип
                 </label>
               </div>
               {isLab ? (
-                <div className={`${inputCls} flex items-center gap-2 bg-violet-50 border-violet-200`}>
-                  <span className="w-2 h-2 rounded-full bg-violet-500" />
-                  <span className="text-sm font-semibold text-violet-700 flex-1">{LESSON_TYPE_LABELS.LAB}</span>
-                  <button type="button" onClick={exitLabMode} className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">
-                    Change
-                  </button>
+                <div className={`${inputCls} flex items-center gap-2 bg-emerald-50 border-emerald-200`}>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-sm font-semibold text-emerald-700 flex-1">{LESSON_TYPE_LABELS.LAB}</span>
                 </div>
               ) : (
                 <select className={inputCls} value={entryType} onChange={e => setEntryType(e.target.value as "LECTURE" | "EXERCISE" | "COMBINED")}>
@@ -401,7 +394,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
               )}
             </div>
             <div>
-              <label className={labelCls}>Day</label>
+              <label className={labelCls}>Ден</label>
               <select className={inputCls} value={day} onChange={e => setDay(Number(e.target.value))}>
                 {DAY_NAMES.map((d, i) => <option key={i} value={i}>{d}</option>)}
               </select>
@@ -411,18 +404,18 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
           {/* Start + End */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Start time</label>
+              <label className={labelCls}>Почеток</label>
               <input type="time" className={inputCls} value={start} onChange={e => setStart(e.target.value)} />
             </div>
             <div>
-              <label className={labelCls}>End time</label>
+              <label className={labelCls}>Крај</label>
               <input type="time" className={inputCls} value={end} onChange={e => setEnd(e.target.value)} />
             </div>
           </div>
 
           {/* Room — a lab-room dropdown in lab mode, free text otherwise */}
           <div>
-            <label className={labelCls}>{isLab ? "Room" : "Room (optional)"}</label>
+            <label className={labelCls}>{isLab ? "Просторија" : "Просторија (незадолжително)"}</label>
             {isLab ? (
               <select className={inputCls} value={room} onChange={e => setRoom(e.target.value)}>
                 {labOptions.map(l => <option key={l} value={l}>{l}</option>)}
@@ -439,7 +432,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
 
           {/* Color */}
           <div>
-            <label className={labelCls}>Color</label>
+            <label className={labelCls}>Боја</label>
             <div className="flex gap-2 flex-wrap">
               {COLORS.map(c => (
                 <button
@@ -473,7 +466,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
                 disabled={saving || saved}
                 className="px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
               >
-                Delete
+                Избриши
               </button>
             )}
             {onDuplicate && (
@@ -486,12 +479,12 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                 </svg>
-                Duplicate
+                Дуплирај
               </button>
             )}
             <div className="ml-auto flex gap-2">
               <button type="button" onClick={onClose} disabled={saving || saved} className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-40">
-                Cancel
+                Откажи
               </button>
               <button
                 type="submit"
@@ -504,10 +497,10 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
               >
                 {saving && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                 {saved
-                  ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6 9 17l-5-5"/></svg> Saved</>
-                  : saving ? "Saving…"
-                  : initial ? "Save changes"
-                  : "Add entry"}
+                  ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6 9 17l-5-5"/></svg> Зачувано</>
+                  : saving ? "Се зачувува…"
+                  : initial ? "Зачувај промени"
+                  : "Додај запис"}
               </button>
             </div>
           </div>

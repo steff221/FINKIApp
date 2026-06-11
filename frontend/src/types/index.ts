@@ -113,7 +113,7 @@ export interface TimetableFilters {
   editionNumber: string | null;
 }
 
-export const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+export const DAY_NAMES = ["Понеделник", "Вторник", "Среда", "Четврток", "Петок"];
 
 // Human labels for known EduPage timetable editions (semesters)
 export const EDITION_LABELS: Record<string, string> = {
@@ -128,10 +128,10 @@ export function editionLabel(num: string): string {
 }
 
 export const LESSON_TYPE_LABELS: Record<string, string> = {
-  LECTURE:  "Lecture",
-  LAB:      "Auditory Exercise",
-  EXERCISE: "Auditory Exercise",
-  COMBINED: "Combined",
+  LECTURE:  "Предавање",
+  LAB:      "Лабораториски вежби",
+  EXERCISE: "Аудиториски вежби",
+  COMBINED: "Комбинирано",
 };
 
 // Formats "HH:mm:ss" → "HH:mm"

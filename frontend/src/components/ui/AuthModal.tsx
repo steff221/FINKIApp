@@ -47,13 +47,13 @@ export default function AuthModal({ onClose }: Props) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("409")) {
-        setError("That username is already registered — try logging in.");
+        setError("Ова корисничко ime веќе е регистрирано — обидете се да се најавите.");
       } else if (msg.includes("401") || msg.includes("403")) {
         setError(mode === "login"
-          ? "Invalid username or password."
-          : "Could not create that account.");
+          ? "Погрешно корисничко ime или лозинка."
+          : "Не може да се создаде сметката.");
       } else {
-        setError("Something went wrong. Please try again.");
+        setError("Нешто тргна наопаку. Обидете се повторно.");
       }
     } finally {
       setLoading(false);
@@ -68,18 +68,18 @@ export default function AuthModal({ onClose }: Props) {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={mode === "login" ? "Log in" : "Create account"}
+        aria-label={mode === "login" ? "Најави се" : "Создади сметка"}
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="font-bold text-gray-900 text-base">
-            {mode === "login" ? "Welcome back" : "Create your account"}
+            {mode === "login" ? "Добредојдовте" : "Создади сметка"}
           </h2>
           <button
             onClick={onClose}
             className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
-            aria-label="Close"
+            aria-label="Затвори"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -99,7 +99,7 @@ export default function AuthModal({ onClose }: Props) {
                   mode === m ? "bg-white text-finki-navy shadow-sm" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {m === "login" ? "Log in" : "Register"}
+                {m === "login" ? "Најави се" : "Регистрирај се"}
               </button>
             ))}
           </div>
@@ -107,12 +107,12 @@ export default function AuthModal({ onClose }: Props) {
           <form onSubmit={handleSubmit} className="space-y-3" autoComplete="off">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                Index / Username
+                Индекс / Корисничко Ime
               </label>
               <input
                 type="text"
                 name="finki-username"
-                placeholder="e.g. 231199"
+                placeholder="пр. 231199"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
@@ -126,13 +126,13 @@ export default function AuthModal({ onClose }: Props) {
 
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                Password
+                Лозинка
               </label>
               <div className="relative">
                 <input
                   type={showPw ? "text" : "password"}
                   name="finki-password"
-                  placeholder={mode === "register" ? "At least 8 characters" : "Your password"}
+                  placeholder={mode === "register" ? "Минимум 8 знаци" : "Вашата лозинка"}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
@@ -146,7 +146,7 @@ export default function AuthModal({ onClose }: Props) {
                   type="button"
                   onClick={() => setShowPw(s => !s)}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label={showPw ? "Hide password" : "Show password"}
+                  aria-label={showPw ? "Скриј лозинка" : "Прикажи лозинка"}
                   tabIndex={-1}
                 >
                   {showPw ? (
@@ -166,7 +166,7 @@ export default function AuthModal({ onClose }: Props) {
               </div>
               {mode === "register" && (
                 <p className={`text-[11px] mt-1 ${password.length >= 8 ? "text-emerald-600" : "text-gray-400"}`}>
-                  {password.length >= 8 ? "✓ Looks good" : "Must be at least 8 characters"}
+                  {password.length >= 8 ? "✓ Во ред" : "Мора да има барем 8 знаци"}
                 </p>
               )}
             </div>
@@ -183,7 +183,7 @@ export default function AuthModal({ onClose }: Props) {
               {loading && (
                 <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
               )}
-              {loading ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}
+              {loading ? "Ве молиме почекајте…" : mode === "login" ? "Најави се" : "Создади сметка"}
             </button>
           </form>
         </div>

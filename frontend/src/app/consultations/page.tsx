@@ -98,11 +98,11 @@ export default function ConsultationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Консултации</h1>
-          <p className="text-sm text-gray-500 mt-1">Пронајдете го вашиот профeсор и пријавете се</p>
+          <p className="text-sm text-gray-500 mt-1">Пронајдете го вашиот професор и пријавете се</p>
         </div>
         {!isLoading && totalCount > 0 && (
           <span className="text-sm text-gray-500 self-start sm:self-end">
-            {totalCount} {totalCount === 1 ? "профeсор" : "профeсори"}
+            {totalCount} {totalCount === 1 ? "професор" : "професори"}
           </span>
         )}
       </div>
@@ -188,7 +188,7 @@ export default function ConsultationsPage() {
         </svg>
         <input
           type="text"
-          placeholder="Пребарај по ime на профeсор…"
+          placeholder="Пребарај по имe на професор…"
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full border border-gray-300 rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-finki-navy/30 focus:border-finki-navy transition-all bg-white"

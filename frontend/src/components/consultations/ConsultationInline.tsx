@@ -17,7 +17,7 @@ export default function ConsultationInline({ teacherId, teacherName }: Props) {
     return (
       <div className="flex items-center gap-2 text-xs text-gray-400">
         <div className="w-3 h-3 rounded-full border-2 border-gray-200 border-t-finki-mid animate-spin" />
-        Loading consultations…
+        Се вчитуваат консултации…
       </div>
     );
   }
@@ -25,7 +25,7 @@ export default function ConsultationInline({ teacherId, teacherName }: Props) {
   if (!data || data.length === 0) {
     return (
       <p className="text-xs text-gray-400 italic">
-        No upcoming consultations for {teacherName} in the next 6 days.
+        Нема претстојни консултации за {teacherName} во следните 6 дена.
       </p>
     );
   }
@@ -33,7 +33,7 @@ export default function ConsultationInline({ teacherId, teacherName }: Props) {
   return (
     <div>
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-        Upcoming — {teacherName}
+        Претстојни — {teacherName}
       </p>
       <div className="space-y-1.5">
         {data.map(slot => (

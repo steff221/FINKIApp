@@ -1,7 +1,7 @@
 {
-  "name": "FINKI Scheduler",
-  "short_name": "FINKI",
-  "description": "Timetable and consultations for FINKI students",
+  "name": "ФИНКИ Распоред",
+  "short_name": "ФИНКИ",
+  "description": "Распоред и консултации за студентите на ФИНКИ",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",

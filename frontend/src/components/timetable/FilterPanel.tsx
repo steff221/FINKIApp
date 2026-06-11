@@ -129,7 +129,7 @@ export default function FilterPanel({ filters, options, onChange, onReset }: Pro
             strokeWidth="2" className="text-finki-mid">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
-          <span className="font-semibold text-sm text-gray-800">Filters</span>
+          <span className="font-semibold text-sm text-gray-800">Филтри</span>
           {activeCount > 0 && (
             <span className="bg-finki-mid text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center leading-none">
               {activeCount}
@@ -140,7 +140,7 @@ export default function FilterPanel({ filters, options, onChange, onReset }: Pro
           onClick={onReset}
           className="text-xs text-gray-400 hover:text-finki-mid transition-colors font-medium"
         >
-          Reset
+          Ресетирај
         </button>
       </div>
 
@@ -148,7 +148,7 @@ export default function FilterPanel({ filters, options, onChange, onReset }: Pro
       <div className="p-4 space-y-4">
         {(options?.editions?.length ?? 0) > 1 && (
           <label className="block">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Semester</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Семестар</span>
             <select
               value={filters.editionNumber ?? options?.currentEdition ?? ""}
               onChange={e => set("editionNumber", str(e.target.value))}
@@ -162,27 +162,27 @@ export default function FilterPanel({ filters, options, onChange, onReset }: Pro
         )}
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Year</span>
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Година</span>
           <select
             value={filters.year ?? ""}
             onChange={e => set("year", num(e.target.value) as number | null)}
             className={selectCls}
           >
-            <option value="">All years</option>
+            <option value="">Сите години</option>
             {(options?.years ?? []).map(y => (
-              <option key={y} value={y}>Year {y}</option>
+              <option key={y} value={y}>Година {y}</option>
             ))}
           </select>
         </label>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Programme</span>
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Насока</span>
           <select
             value={filters.programmeCode ?? ""}
             onChange={e => set("programmeCode", str(e.target.value))}
             className={selectCls}
           >
-            <option value="">All programmes</option>
+            <option value="">Сите насоки</option>
             {(options?.programmes ?? []).map(p => (
               <option key={p} value={p}>{p}</option>
             ))}
@@ -190,25 +190,25 @@ export default function FilterPanel({ filters, options, onChange, onReset }: Pro
         </label>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Day</span>
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ден</span>
           <select
             value={filters.dayOfWeek ?? ""}
             onChange={e => set("dayOfWeek", num(e.target.value) as number | null)}
             className={selectCls}
           >
-            <option value="">All days</option>
+            <option value="">Сите денови</option>
             {DAY_NAMES.map((d, i) => <option key={i} value={i}>{d}</option>)}
           </select>
         </label>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Type</span>
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Тип</span>
           <select
             value={filters.lessonType ?? ""}
             onChange={e => set("lessonType", str(e.target.value))}
             className={selectCls}
           >
-            <option value="">All types</option>
+            <option value="">Сите типови</option>
             {Object.entries(LESSON_TYPE_LABELS).filter(([k]) => k !== "LAB").map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
@@ -216,23 +216,23 @@ export default function FilterPanel({ filters, options, onChange, onReset }: Pro
         </label>
 
         <div className="block">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Teacher</span>
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Предавач</span>
           <SearchableSelect
             value={filters.teacherId}
             options={sortedTeachers}
-            placeholder="All teachers"
+            placeholder="Сите предавачи"
             onChange={id => set("teacherId", id)}
           />
         </div>
 
         <label className="block">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Room</span>
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Просторија</span>
           <select
             value={filters.classroomId ?? ""}
             onChange={e => set("classroomId", num(e.target.value) as number | null)}
             className={selectCls}
           >
-            <option value="">All rooms</option>
+            <option value="">Сите простории</option>
             {(options?.classrooms ?? [])
               .sort((a, b) => a.name.localeCompare(b.name))
               .map(c => (

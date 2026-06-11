@@ -38,10 +38,10 @@ export default function NavBar() {
           {/* Nav links */}
           <div className="flex items-center gap-1">
             {[
-              { href: "/timetable",     label: "Timetable" },
-              { href: "/consultations", label: "Consultations" },
-              { href: "/schedule",      label: "My Schedule" },
-              { href: "/maps",          label: "Maps" },
+              { href: "/timetable",     label: "Распоред" },
+              { href: "/consultations", label: "Консултации" },
+              { href: "/schedule",      label: "Мој Распоред" },
+              { href: "/maps",          label: "Карта" },
             ].map(({ href, label }) => {
               const active = pathname.startsWith(href);
               return (
@@ -73,9 +73,9 @@ export default function NavBar() {
                 <span className="text-white/80 text-sm hidden sm:block max-w-[140px] truncate">{auth.email}</span>
                 <button
                   onClick={handleLogout}
-                  title="Sign out"
+                  title="Одјави се"
                   className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-white/70 hover:text-white transition-colors"
-                  aria-label="Sign out"
+                  aria-label="Одјави се"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -89,7 +89,7 @@ export default function NavBar() {
                 onClick={() => setShowAuth(true)}
                 className="bg-white text-finki-navy px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors shadow-sm"
               >
-                Log in
+                Најави се
               </button>
             )}
           </div>
