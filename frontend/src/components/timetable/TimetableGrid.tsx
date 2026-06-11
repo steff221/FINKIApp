@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ScheduleSlotResponse } from "@/types";
 import { DAY_NAMES, LESSON_TYPE_LABELS, formatTime } from "@/types";
 import type { useSchedule } from "@/hooks/useSchedule";
@@ -19,8 +20,12 @@ const TYPE_STYLES: Record<string, { pill: string; card: string; dot: string }> =
 };
 const FALLBACK = { pill: "bg-gray-100 text-gray-600", card: "border-l-gray-300", dot: "bg-gray-400" };
 
+const MK_DAYS_SHORT = ["Пон", "Вто", "Сре", "Чет", "Пет"];
+
 export default function TimetableGrid({ slots, schedule }: Props) {
   const [expandedTeacher, setExpandedTeacher] = useState<number | null>(null);
+  const todayIdx = (() => { const d = new Date().getDay(); return d >= 1 && d <= 5 ? d - 1 : 0; })();
+  const [mobileDay, setMobileDay] = useState(todayIdx);
 
   if (slots.length === 0) {
     return (
@@ -40,15 +45,40 @@ export default function TimetableGrid({ slots, schedule }: Props) {
 
   const byDay: Record<number, ScheduleSlotResponse[]> = {};
   slots.forEach(s => { (byDay[s.dayOfWeek] ??= []).push(s); });
+  const daysWithSlots = DAY_NAMES.map((_, i) => i).filter(i => byDay[i]);
 
   return (
+    <>
+      {/* ── Mobile day tabs ── */}
+      <div className="flex lg:hidden gap-1 mb-4 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+        {daysWithSlots.map(i => (
+          <button
+            key={i}
+            onClick={() => setMobileDay(i)}
+            className={`flex-1 min-w-[52px] py-2 rounded-lg text-xs font-bold transition-all ${
+              mobileDay === i
+                ? "bg-white text-finki-navy shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <div>{MK_DAYS_SHORT[i]}</div>
+            {byDay[i] && (
+              <div className={`text-[10px] mt-0.5 ${mobileDay === i ? "text-finki-mid" : "text-gray-400"}`}>
+                {byDay[i].length}
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+
     <div className="space-y-8">
       {DAY_NAMES.map((dayName, dayIndex) => {
         const daySlots = byDay[dayIndex];
         if (!daySlots) return null;
+        const hiddenOnMobile = dayIndex !== mobileDay;
 
         return (
-          <section key={dayIndex}>
+          <section key={dayIndex} className={hiddenOnMobile ? "hidden lg:block" : ""}>
             {/* Day header */}
             <div className="flex items-center gap-3 mb-3">
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap">
@@ -133,7 +163,7 @@ export default function TimetableGrid({ slots, schedule }: Props) {
                                 {slot.teachers.length > 0 && (
                                   <div className="flex flex-wrap gap-1 mt-2">
                                     {slot.teachers.map((t, i) => (
-                                      <span key={t.id}>
+                                      <span key={t.id} className="inline-flex items-center gap-1">
                                         <button
                                           onClick={() =>
                                             setExpandedTeacher(
@@ -148,6 +178,18 @@ export default function TimetableGrid({ slots, schedule }: Props) {
                                         >
                                           {t.cyrillicName ?? t.consultationUsername ?? "Unknown"}
                                         </button>
+                                        {t.consultationUsername && (
+                                          <Link
+                                            href={`/consultations/professor/${t.id}?name=${encodeURIComponent(t.cyrillicName ?? "")}`}
+                                            onClick={e => e.stopPropagation()}
+                                            title="Консултации"
+                                            className="text-gray-300 hover:text-finki-navy transition-colors"
+                                          >
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                              <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /><path d="m9 16 2 2 4-4" />
+                                            </svg>
+                                          </Link>
+                                        )}
                                         {i < slot.teachers.length - 1 && " "}
                                       </span>
                                     ))}
@@ -197,5 +239,6 @@ export default function TimetableGrid({ slots, schedule }: Props) {
         );
       })}
     </div>
+    </>
   );
 }

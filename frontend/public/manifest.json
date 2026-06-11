@@ -1,0 +1,17 @@
+{
+  "name": "FINKI Scheduler",
+  "short_name": "FINKI",
+  "description": "Timetable and consultations for FINKI students",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0d1b40",
+  "icons": [
+    {
+      "src": "/FINKI_logo-removebg-preview.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

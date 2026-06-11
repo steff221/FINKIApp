@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import useSWR from "swr";
 import { getFilters, getSlots } from "@/lib/api";
 import type { TimetableFilters, TimetableFiltersResponse } from "@/types";
@@ -43,6 +43,14 @@ function GridSkeleton() {
 export default function TimetablePage() {
   const [filters, setFilters] = useState<TimetableFilters>(EMPTY_FILTERS);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, []);
 
   // ── Shareable URL: hydrate filters from the query string on mount … ──────────
   useEffect(() => {
@@ -95,9 +103,7 @@ export default function TimetablePage() {
       <div className="flex flex-col sm:flex-row sm:items-end gap-4">
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-finki-navy tracking-tight">Class Timetable</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Browse and filter every class — log in to build your own schedule
-          </p>
+    
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -106,6 +112,18 @@ export default function TimetablePage() {
               {slots.length} class{slots.length === 1 ? "" : "es"}
             </span>
           )}
+          <button
+            onClick={copyLink}
+            title="Copy shareable link"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:border-finki-navy hover:text-finki-navy transition-colors"
+          >
+            {copied ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            )}
+            {copied ? "Copied!" : "Share"}
+          </button>
           {schedule.loggedIn && (
             <button
               onClick={() => setShowSchedule(!showSchedule)}

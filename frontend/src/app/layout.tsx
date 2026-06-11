@@ -6,6 +6,8 @@ import PageTransition from "@/components/ui/PageTransition";
 export const metadata: Metadata = {
   title: "FINKI Scheduler",
   description: "Unified timetable and consultation schedule for FINKI students",
+  manifest: "/manifest.json",
+  themeColor: "#0d1b40",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
