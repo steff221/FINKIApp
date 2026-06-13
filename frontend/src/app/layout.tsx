@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import NavBar from "@/components/ui/NavBar";
 import PageTransition from "@/components/ui/PageTransition";
@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "ФИНКИ Распоред",
   description: "Распоред на часови, консултации и карта на кампусот за студентите на ФИНКИ",
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
   themeColor: "#0d1b40",
 };
 

@@ -112,7 +112,7 @@ export default function AuthModal({ onClose }: Props) {
               <input
                 type="text"
                 name="finki-username"
-                placeholder="пр. 231199"
+                placeholder="пр. 231119"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
