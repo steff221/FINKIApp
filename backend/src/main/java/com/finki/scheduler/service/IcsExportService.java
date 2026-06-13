@@ -14,7 +14,6 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Generates a .ics file for a user's personal schedule.
@@ -29,8 +28,11 @@ import java.util.UUID;
 public class IcsExportService {
 
     private static final DateTimeFormatter ICS_DT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
-    private static final DateTimeFormatter ICS_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter ICS_UTC = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
     private static final ZoneId SKOPJE = ZoneId.of("Europe/Skopje");
+
+    /** Stable DTSTAMP for the whole file — the moment the calendar was generated, in UTC. */
+    private final String dtStamp = ICS_UTC.format(ZonedDateTime.now(ZoneOffset.UTC));
 
     private final UserScheduleService userScheduleService;
     private final ConsultationSlotRepository consultationSlotRepo;
@@ -76,7 +78,8 @@ public class IcsExportService {
         ZonedDateTime dtEnd   = ZonedDateTime.of(firstDate, entry.getEndTime(),   SKOPJE);
 
         sb.append("BEGIN:VEVENT\r\n");
-        sb.append("UID:").append(UUID.randomUUID()).append("@finki-scheduler\r\n");
+        sb.append("UID:custom-").append(entry.getId()).append("@finki-scheduler\r\n");
+        sb.append("DTSTAMP:").append(dtStamp).append("\r\n");
         sb.append("DTSTART;TZID=Europe/Skopje:").append(dtStart.format(ICS_DT)).append("\r\n");
         sb.append("DTEND;TZID=Europe/Skopje:").append(dtEnd.format(ICS_DT)).append("\r\n");
         sb.append("RRULE:FREQ=WEEKLY\r\n");
@@ -104,7 +107,8 @@ public class IcsExportService {
         String summary  = slot.getSubject().getBaseName();
 
         sb.append("BEGIN:VEVENT\r\n");
-        sb.append("UID:").append(UUID.randomUUID()).append("@finki-scheduler\r\n");
+        sb.append("UID:slot-").append(slot.getId()).append("@finki-scheduler\r\n");
+        sb.append("DTSTAMP:").append(dtStamp).append("\r\n");
         sb.append("DTSTART;TZID=Europe/Skopje:").append(dtStart.format(ICS_DT)).append("\r\n");
         sb.append("DTEND;TZID=Europe/Skopje:").append(dtEnd.format(ICS_DT)).append("\r\n");
         sb.append("RRULE:FREQ=WEEKLY\r\n");
@@ -122,7 +126,8 @@ public class IcsExportService {
             ? teacher.getCyrillicName() : teacher.getConsultationUsername());
 
         sb.append("BEGIN:VEVENT\r\n");
-        sb.append("UID:").append(UUID.randomUUID()).append("@finki-scheduler\r\n");
+        sb.append("UID:consult-").append(cs.getId()).append('-').append(teacher.getId()).append("@finki-scheduler\r\n");
+        sb.append("DTSTAMP:").append(dtStamp).append("\r\n");
         sb.append("DTSTART;TZID=Europe/Skopje:").append(dtStart.format(ICS_DT)).append("\r\n");
         sb.append("DTEND;TZID=Europe/Skopje:").append(dtEnd.format(ICS_DT)).append("\r\n");
         sb.append("SUMMARY:").append(escape(summary)).append("\r\n");
@@ -134,6 +139,11 @@ public class IcsExportService {
     }
 
     private String escape(String s) {
-        return s.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n");
+        return s.replace("\\", "\\\\")
+                .replace(";", "\\;")
+                .replace(",", "\\,")
+                .replace("\r\n", "\\n")
+                .replace("\r", "\\n")
+                .replace("\n", "\\n");
     }
 }

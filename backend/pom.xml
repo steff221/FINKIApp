@@ -21,6 +21,9 @@
     <jjwt.version>0.12.6</jjwt.version>
     <!-- Override Spring Boot's managed 1.18.34, which cannot process JDK 24+ compilers. -->
     <lombok.version>1.18.42</lombok.version>
+    <!-- Override Spring Boot's managed 1.14.19, which Mockito uses to mock concrete
+         classes; that version only supports up to Java 23. -->
+    <byte-buddy.version>1.17.5</byte-buddy.version>
   </properties>
 
   <dependencies>
