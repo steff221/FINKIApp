@@ -10,8 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+import java.util.TreeSet;
 
 /**
  * Matches EduPage teachers (Cyrillic names) to consultation usernames (Latin).
@@ -35,6 +36,9 @@ public class TeacherMatcherService {
     private final TeacherMatchOverrideRepository overrideRepo;
     private final NameNormalizer normalizer;
 
+    /** A consultation teacher with its name fields normalised once, up front. */
+    private record Candidate(Teacher teacher, String usernameNorm, String displayNorm) {}
+
     @Transactional
     public void matchAll() {
         List<Teacher> edupageTeachers = teacherRepo.findUnmatchedEdupageTeachers();
@@ -56,31 +60,34 @@ public class TeacherMatcherService {
     @Transactional
     public void tryMatch(Teacher edupageTeacher, List<Teacher> consultationTeachers) {
         // 1. Manual override takes absolute precedence
-        overrideRepo.findByEdupageId(edupageTeacher.getEdupageId()).ifPresent(ov -> {
+        overrideRepo.findByEdupageId(edupageTeacher.getEdupageId()).ifPresent(ov ->
             teacherRepo.findByConsultationUsername(ov.getConsultationUsername()).ifPresent(ct -> {
                 merge(edupageTeacher, ct, BigDecimal.ONE, true);
                 log.info("Manual override: {} → {}", edupageTeacher.getCyrillicName(), ov.getConsultationUsername());
-            });
-        });
+            }));
         if (edupageTeacher.getConsultationUsername() != null) return;
+
+        // Normalise each candidate's name fields once instead of once per EduPage teacher.
+        List<Candidate> candidates = consultationTeachers.stream()
+            .map(ct -> new Candidate(ct,
+                normalizer.normalize(ct.getConsultationUsername()),
+                normalizer.normalize(ct.getCyrillicName())))
+            .toList();
 
         String epNorm = normalizer.normalize(edupageTeacher.getCyrillicName());
 
         Teacher bestCandidate = null;
         double bestScore = 0.0;
 
-        for (Teacher ct : consultationTeachers) {
+        for (Candidate c : candidates) {
             // Match against both the username and the scraped display name
-            String usernameNorm = normalizer.normalize(ct.getConsultationUsername());
-            String displayNorm  = normalizer.normalize(ct.getCyrillicName());
-
-            double scoreUsername = similarity(epNorm, usernameNorm);
-            double scoreDisplay  = similarity(epNorm, displayNorm);
+            double scoreUsername = tokenSetSimilarity(epNorm, c.usernameNorm());
+            double scoreDisplay  = tokenSetSimilarity(epNorm, c.displayNorm());
             double score = Math.max(scoreUsername, scoreDisplay);
 
             if (score > bestScore) {
                 bestScore = score;
-                bestCandidate = ct;
+                bestCandidate = c.teacher();
             }
         }
 
@@ -116,6 +123,41 @@ public class TeacherMatcherService {
         edupageTeacher.setMatchConfidence(confidence);
         edupageTeacher.setManualOverride(manual);
         teacherRepo.save(edupageTeacher);
+    }
+
+    /**
+     * Token-aware similarity in [0, 1], robust to word order and extra name
+     * tokens (e.g. a middle/maiden surname present on one side only).
+     *
+     * Modelled on the fuzzywuzzy token-set ratio: the shared tokens are compared
+     * against the shared-plus-remainder strings, and a token-sort comparison acts
+     * as a floor. A subset like "biljana tojtovska" inside "biljana tojtovska
+     * ribarski" scores 1.0; a reordered "petrov zoran" vs "zoran petrov" also
+     * scores 1.0, while genuinely different names stay low because their
+     * remainders dominate.
+     */
+    public double tokenSetSimilarity(String a, String b) {
+        if (a.isEmpty() && b.isEmpty()) return 1.0;
+        if (a.isEmpty() || b.isEmpty()) return 0.0;
+
+        TreeSet<String> ta = new TreeSet<>(Arrays.asList(a.split(" ")));
+        TreeSet<String> tb = new TreeSet<>(Arrays.asList(b.split(" ")));
+
+        TreeSet<String> intersection = new TreeSet<>(ta);
+        intersection.retainAll(tb);
+        TreeSet<String> remainderA = new TreeSet<>(ta);
+        remainderA.removeAll(intersection);
+        TreeSet<String> remainderB = new TreeSet<>(tb);
+        remainderB.removeAll(intersection);
+
+        String inter = String.join(" ", intersection);
+        String combinedA = (inter + " " + String.join(" ", remainderA)).trim();
+        String combinedB = (inter + " " + String.join(" ", remainderB)).trim();
+
+        double shared      = similarity(inter, combinedA);     // common vs common+extraA
+        double sharedOther = similarity(inter, combinedB);     // common vs common+extraB
+        double both        = similarity(combinedA, combinedB); // full token-sorted comparison
+        return Math.max(Math.max(shared, sharedOther), both);
     }
 
     // Levenshtein similarity in [0, 1]

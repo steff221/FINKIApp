@@ -56,4 +56,37 @@ class TeacherMatcherTest {
         // Both start with "biljana tojtovska" — similarity should be well above low threshold
         assertThat(matcher.similarity(fromName, fromUsername)).isGreaterThan(0.6);
     }
+
+    // --- Token-set similarity: robust to word order and extra name tokens ---
+
+    @Test
+    void tokenSet_extraSurname_isTreatedAsSubset() {
+        // The maiden/second surname "рибарски" is present on one side only. Whole-string
+        // Levenshtein is dragged down by it; token-set treats it as a subset → ~1.0.
+        String fromName     = normalizer.normalize("Билјана Тојтовска Рибарски");
+        String fromUsername = normalizer.normalize("biljana.tojtovska");
+        assertThat(matcher.tokenSetSimilarity(fromName, fromUsername)).isGreaterThanOrEqualTo(0.99);
+    }
+
+    @Test
+    void tokenSet_reorderedTokens_scoreFull() {
+        // Surname-first vs given-name-first must not be penalised.
+        String a = normalizer.normalize("Петров Зоран");
+        String b = normalizer.normalize("zoran.petrov");
+        assertThat(matcher.tokenSetSimilarity(a, b)).isEqualTo(1.0);
+    }
+
+    @Test
+    void tokenSet_sharedFirstNameOnly_staysBelowMatchThreshold() {
+        // Two different people who merely share a first name must not match.
+        String a = normalizer.normalize("Ана Тодоровска");
+        String b = normalizer.normalize("ana.petrova");
+        assertThat(matcher.tokenSetSimilarity(a, b)).isLessThan(0.6);
+    }
+
+    @Test
+    void tokenSet_emptyStrings() {
+        assertThat(matcher.tokenSetSimilarity("", "")).isEqualTo(1.0);
+        assertThat(matcher.tokenSetSimilarity("abc", "")).isEqualTo(0.0);
+    }
 }
