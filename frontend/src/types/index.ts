@@ -129,7 +129,7 @@ export function editionLabel(num: string): string {
 
 export const LESSON_TYPE_LABELS: Record<string, string> = {
   LECTURE:  "Предавање",
-  LAB:      "Лабораториски вежби",
+  LAB:      "Аудиториски вежби",
   EXERCISE: "Аудиториски вежби",
   COMBINED: "Комбинирано",
 };

@@ -186,7 +186,7 @@ export default function SchedulePage() {
           {[
             { label: "Предавање",             color: "bg-blue-500" },
             { label: "Аудиториски вежби",   color: "bg-violet-500" },
-            { label: "Лабораториски вежби", color: "bg-emerald-500" },
+            { label: "Аудиториски вежби", color: "bg-emerald-500" },
             { label: "Комбинирано",         color: "bg-amber-500" },
           ].map(({ label, color }) => (
             <span key={label} className="flex items-center gap-1.5 text-xs text-gray-500 bg-white rounded-full px-3 py-1 border border-gray-100">
