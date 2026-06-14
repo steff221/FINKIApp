@@ -27,23 +27,4 @@ consultations, build a personal weekly schedule, and find rooms on a campus map.
 - **Database** — PostgreSQL 16
 - **Data** — class timetable scraped from EduPage; consultations scraped from the FINKI site
 
-## Running it
 
-```bash
-cp .env.example .env   # then fill in DB_PASSWORD and JWT_SECRET
-docker compose up --build
-```
-
-- Frontend → http://localhost:3000
-- Backend API → http://localhost:8080
-
-## Configuration
-
-All settings live in `.env` (see `.env.example`):
-
-| Variable | Purpose |
-|---|---|
-| `DB_PASSWORD` | PostgreSQL password |
-| `JWT_SECRET` | JWT signing secret (min 32 chars) |
-| `EDUPAGE_GSH` / `EDUPAGE_EDITION_YEAR` | EduPage timetable source |
-| `NEXT_PUBLIC_API_URL` | Backend URL used by the frontend |
