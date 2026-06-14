@@ -81,6 +81,8 @@ export default function WeeklyCalendar({ entries, conflictIds, onAdd, onEdit }: 
   const nowH = now.getHours() + now.getMinutes() / 60;
   const showTimeIndicator = nowH >= START_HOUR && nowH < END_HOUR;
   const timeTop = (nowH - START_HOUR) * HOUR_HEIGHT;
+  // DAY_NAMES is Mon–Fri (0–4); JS getDay() is Sun=0. Returns -1 on weekends.
+  const todayIdx = (now.getDay() + 6) % 7;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -123,11 +125,15 @@ export default function WeeklyCalendar({ entries, conflictIds, onAdd, onEdit }: 
       {/* Day headers */}
       <div className="grid grid-cols-[56px_repeat(5,1fr)] border-b border-gray-100 bg-gray-50/60">
         <div className="py-3" />
-        {DAY_NAMES.map((day, i) => (
-          <div key={i} className="py-3 text-center">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{day}</span>
-          </div>
-        ))}
+        {DAY_NAMES.map((day, i) => {
+          const isToday = i === todayIdx;
+          return (
+            <div key={i} className={`py-3 text-center ${isToday ? "bg-finki-navy/5" : ""}`}>
+              <span className={`text-xs font-bold uppercase tracking-widest ${isToday ? "text-finki-navy" : "text-gray-500"}`}>{day}</span>
+              {isToday && <span className="block mx-auto mt-1 w-1.5 h-1.5 rounded-full bg-finki-navy" />}
+            </div>
+          );
+        })}
       </div>
 
       {/* Grid body */}

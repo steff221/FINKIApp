@@ -13,6 +13,15 @@ import { getAuth } from "@/lib/auth";
 
 const SWR_KEY = "/schedule/custom";
 
+/** Formats a minute count as a Macedonian duration, e.g. 150 → "2ч 30мин". */
+function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}мин`;
+  if (m === 0) return `${h}ч`;
+  return `${h}ч ${m}мин`;
+}
+
 export default function SchedulePage() {
   const [auth, setAuth] = useState(() => typeof window !== "undefined" ? getAuth() : null);
   const [showReauth, setShowReauth] = useState(false);
@@ -54,6 +63,13 @@ export default function SchedulePage() {
     });
     return ids;
   }, [entries]);
+
+  // Total weekly contact time across all entries, in minutes.
+  const weeklyMinutes = useMemo(() => entries.reduce((sum, e) => {
+    const [sh, sm] = e.startTime.split(":").map(Number);
+    const [eh, em] = e.endTime.split(":").map(Number);
+    return sum + Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+  }, 0), [entries]);
 
   const [modal, setModal] = useState<{
     open: boolean;
@@ -130,7 +146,7 @@ export default function SchedulePage() {
               <p className="text-sm text-gray-500">
                 {entries.length === 0
                   ? "Кликнете временски слот за да додадете предмет"
-                  : `${entries.length} ${entries.length === 1 ? "запис" : "записи"}`}
+                  : `${entries.length} ${entries.length === 1 ? "запис" : "записи"} · ${formatDuration(weeklyMinutes)} неделно`}
               </p>
             </div>
           </div>
@@ -186,7 +202,7 @@ export default function SchedulePage() {
           {[
             { label: "Предавање",             color: "bg-blue-500" },
             { label: "Аудиториски вежби",   color: "bg-violet-500" },
-            { label: "Аудиториски вежби", color: "bg-emerald-500" },
+            { label: "Лабораториски вежби", color: "bg-emerald-500" },
             { label: "Комбинирано",         color: "bg-amber-500" },
           ].map(({ label, color }) => (
             <span key={label} className="flex items-center gap-1.5 text-xs text-gray-500 bg-white rounded-full px-3 py-1 border border-gray-100">
