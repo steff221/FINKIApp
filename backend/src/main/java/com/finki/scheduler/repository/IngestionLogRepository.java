@@ -7,4 +7,7 @@ import java.util.Optional;
 
 public interface IngestionLogRepository extends JpaRepository<IngestionLog, Long> {
     Optional<IngestionLog> findTopBySourceOrderByStartedAtDesc(IngestionLog.Source source);
+
+    Optional<IngestionLog> findTopBySourceAndStatusOrderByStartedAtDesc(
+        IngestionLog.Source source, IngestionLog.Status status);
 }
