@@ -1,7 +1,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+# npm install (not `npm ci`): vitest's native optional deps resolve per-platform,
+# so a macOS-generated lock omits the linux binaries `npm ci` would demand.
+RUN npm install --no-audit --no-fund
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG BACKEND_URL=http://backend:8080

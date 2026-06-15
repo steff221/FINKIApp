@@ -3,6 +3,7 @@ import type {
   ConsultationSlotResponse,
   CustomEntryRequest,
   CustomEntryResponse,
+  ExamResponse,
   ScheduleSlotResponse,
   TeacherWithSlotsResponse,
   TimetableFilters,
@@ -135,12 +136,34 @@ export async function getMyConsultationBookings(): Promise<number[]> {
   return get("/consultations/bookings/mine");
 }
 
+export async function getMyBookedConsultations(): Promise<ConsultationSlotResponse[]> {
+  return get("/consultations/bookings/mine/slots");
+}
+
 export async function bookConsultation(slotId: number, reason: string): Promise<void> {
   return post(`/consultations/${slotId}/book`, { reason });
 }
 
 export async function cancelConsultationBooking(slotId: number): Promise<void> {
   return del(`/consultations/${slotId}/book`);
+}
+
+// ── Exams ─────────────────────────────────────────────────────────────────────
+
+export async function getExamSessions(): Promise<string[]> {
+  return get("/exams/sessions");
+}
+
+export async function getExams(session?: string | null, q?: string): Promise<ExamResponse[]> {
+  return get("/exams", { session: session ?? undefined, q: q || undefined });
+}
+
+export function getExamsIcsUrl(session?: string | null, q?: string): string {
+  const params = new URLSearchParams();
+  if (session) params.set("session", session);
+  if (q) params.set("q", q);
+  const qs = params.toString();
+  return `${BASE}/exams/export.ics${qs ? `?${qs}` : ""}`;
 }
 
 // ── Personal schedule ─────────────────────────────────────────────────────────

@@ -40,6 +40,7 @@ export default function NavBar() {
             {[
               { href: "/timetable",     label: "Распоред" },
               { href: "/consultations", label: "Консултации" },
+              { href: "/exams",         label: "Испити" },
               { href: "/schedule",      label: "Мој Распоред" },
               { href: "/maps",          label: "Карта" },
             ].map(({ href, label }) => {

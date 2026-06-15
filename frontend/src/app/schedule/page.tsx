@@ -3,24 +3,16 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 import Image from "next/image";
-import WeeklyCalendar from "@/components/schedule/WeeklyCalendar";
+import WeeklyCalendar, { type CalendarConsultation } from "@/components/schedule/WeeklyCalendar";
 import AddEntryModal from "@/components/schedule/AddEntryModal";
 import AuthModal from "@/components/ui/AuthModal";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
-import type { CustomEntryResponse, CustomEntryRequest } from "@/types";
-import { getCustomEntries, createCustomEntry, updateCustomEntry, deleteCustomEntry, getIcsUrl } from "@/lib/api";
+import type { CustomEntryResponse, CustomEntryRequest, ConsultationSlotResponse } from "@/types";
+import { getCustomEntries, createCustomEntry, updateCustomEntry, deleteCustomEntry, getIcsUrl, getMyBookedConsultations } from "@/lib/api";
 import { getAuth } from "@/lib/auth";
+import { formatDuration } from "@/lib/format";
 
 const SWR_KEY = "/schedule/custom";
-
-/** Formats a minute count as a Macedonian duration, e.g. 150 → "2ч 30мин". */
-function formatDuration(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m}мин`;
-  if (m === 0) return `${h}ч`;
-  return `${h}ч ${m}мин`;
-}
 
 export default function SchedulePage() {
   const [auth, setAuth] = useState(() => typeof window !== "undefined" ? getAuth() : null);
@@ -47,6 +39,35 @@ export default function SchedulePage() {
     () => getCustomEntries(),
     { shouldRetryOnError: false }
   );
+
+  const { data: bookedConsultations = [] } = useSWR<ConsultationSlotResponse[]>(
+    auth ? "/consultations/bookings/mine/slots" : null,
+    () => getMyBookedConsultations(),
+    { shouldRetryOnError: false }
+  );
+
+  // Map each upcoming booked consultation onto its weekday (0=Mon … 4=Fri) so it
+  // shows alongside custom entries on the weekly grid. Past bookings are dropped.
+  const consultationEntries = useMemo<CalendarConsultation[]>(() => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    return bookedConsultations
+      .filter(c => c.date >= todayStr)
+      .map(c => {
+        const [y, m, d] = c.date.split("-").map(Number);
+        const dayOfWeek = (new Date(y, m - 1, d).getDay() + 6) % 7;
+        return {
+          id: c.id,
+          dayOfWeek,
+          startTime: c.startTime,
+          endTime: c.endTime,
+          title: c.teacher.cyrillicName ?? c.teacher.canonicalName ?? "Консултации",
+          room: c.room,
+          date: c.date,
+        };
+      })
+      .filter(c => c.dayOfWeek >= 0 && c.dayOfWeek <= 4);
+  }, [bookedConsultations]);
 
   // Entries on the same day whose time ranges overlap
   const conflictIds = useMemo(() => {
@@ -204,6 +225,7 @@ export default function SchedulePage() {
             { label: "Аудиториски вежби",   color: "bg-violet-500" },
             { label: "Лабораториски вежби", color: "bg-emerald-500" },
             { label: "Комбинирано",         color: "bg-amber-500" },
+            { label: "Консултации",         color: "bg-slate-700" },
           ].map(({ label, color }) => (
             <span key={label} className="flex items-center gap-1.5 text-xs text-gray-500 bg-white rounded-full px-3 py-1 border border-gray-100">
               <span className={`w-2 h-2 rounded-full ${color}`} />
@@ -258,7 +280,7 @@ export default function SchedulePage() {
               </button>
             </div>
           </div>
-        ) : entries.length === 0 ? (
+        ) : entries.length === 0 && consultationEntries.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center">
               <Image src="/Callendar.png" alt="" width={32} height={32} className="object-contain opacity-25" />
@@ -285,7 +307,7 @@ export default function SchedulePage() {
             </div>
           </div>
         ) : (
-          <WeeklyCalendar entries={entries} conflictIds={conflictIds} onAdd={openAdd} onEdit={openEdit} />
+          <WeeklyCalendar entries={entries} consultations={consultationEntries} conflictIds={conflictIds} onAdd={openAdd} onEdit={openEdit} />
         )}
       </div>
 

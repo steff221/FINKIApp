@@ -3,6 +3,7 @@ package com.finki.scheduler.controller;
 import com.finki.scheduler.domain.ConsultationBooking;
 import com.finki.scheduler.domain.User;
 import com.finki.scheduler.dto.request.BookingRequest;
+import com.finki.scheduler.dto.response.ConsultationSlotResponse;
 import com.finki.scheduler.repository.ConsultationBookingRepository;
 import com.finki.scheduler.repository.ConsultationSlotRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,5 +53,13 @@ public class ConsultationBookingController {
     @GetMapping("/bookings/mine")
     public List<Long> mine(@AuthenticationPrincipal User user) {
         return bookingRepo.findSlotIdsByUserId(user.getId());
+    }
+
+    /** Return full slot details for every consultation the current user has booked. */
+    @GetMapping("/bookings/mine/slots")
+    public List<ConsultationSlotResponse> mineSlots(@AuthenticationPrincipal User user) {
+        return bookingRepo.findSlotsByUserId(user.getId()).stream()
+            .map(s -> ConsultationSlotResponse.from(s, bookingRepo.countBySlotId(s.getId())))
+            .toList();
     }
 }

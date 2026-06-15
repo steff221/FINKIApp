@@ -51,6 +51,17 @@ export interface ConsultationSlotResponse {
   enrolledCount: number;
 }
 
+export interface ExamResponse {
+  id: number;
+  session: string;
+  subjectName: string;
+  date: string;            // "YYYY-MM-DD"
+  startTime: string | null; // "HH:mm:ss"
+  endTime: string | null;
+  rooms: string | null;
+  note: string | null;
+}
+
 export interface TeacherWithSlotsResponse {
   teacher: TeacherResponse;
   slots: ConsultationSlotResponse[];
