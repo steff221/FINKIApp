@@ -1,0 +1,11 @@
+# Caddy automatically obtains and renews a Let's Encrypt certificate for DOMAIN
+# (and uses its own internal CA when DOMAIN is localhost). All traffic is served
+# over HTTPS and proxied to the Next.js frontend, which rewrites /api/* to the
+# backend over the internal Docker network.
+#
+# To receive certificate-expiry notices, optionally add a global email, e.g.:
+#   { email you@example.com }
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy frontend:3000
+}

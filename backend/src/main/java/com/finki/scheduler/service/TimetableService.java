@@ -25,15 +25,12 @@ public class TimetableService {
                                         Long classroomId, LessonType lessonType,
                                         Integer dayOfWeek,
                                         String editionNumber, boolean allEditions) {
-        // Default to the current edition so the timetable never mixes semesters.
-        // allEditions=true (used by the personal-schedule autocomplete) returns every edition.
         String edition = allEditions ? null
             : (editionNumber != null ? editionNumber : currentEdition());
         return slotRepo.findFiltered(edition, year, programmeCode, teacherId,
             subjectId, classroomId, lessonType, dayOfWeek);
     }
 
-    /** The current edition = the highest edition number present in the data. */
     public String currentEdition() {
         return slotRepo.findDistinctEditionNumbers().stream()
             .max(Comparator.comparingInt(this::editionAsInt))

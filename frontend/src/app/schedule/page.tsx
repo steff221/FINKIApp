@@ -8,7 +8,7 @@ import AddEntryModal from "@/components/schedule/AddEntryModal";
 import AuthModal from "@/components/ui/AuthModal";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import type { CustomEntryResponse, CustomEntryRequest, ConsultationSlotResponse } from "@/types";
-import { getCustomEntries, createCustomEntry, updateCustomEntry, deleteCustomEntry, getIcsUrl, getMyBookedConsultations } from "@/lib/api";
+import { getCustomEntries, createCustomEntry, updateCustomEntry, deleteCustomEntry, getIcsUrl, getIcsToken, getMyBookedConsultations } from "@/lib/api";
 import { getAuth } from "@/lib/auth";
 import { formatDuration } from "@/lib/format";
 
@@ -44,6 +44,13 @@ export default function SchedulePage() {
     auth ? "/consultations/bookings/mine/slots" : null,
     () => getMyBookedConsultations(),
     { shouldRetryOnError: false }
+  );
+
+  // Opaque token for the personal .ics feed URL (keeps the JWT out of the URL).
+  const { data: calendarToken } = useSWR<string>(
+    auth ? "/schedule/ics-token" : null,
+    () => getIcsToken(),
+    { shouldRetryOnError: false, revalidateOnFocus: false }
   );
 
   // Map each upcoming booked consultation onto its weekday (0=Mon … 4=Fri) so it
@@ -173,9 +180,9 @@ export default function SchedulePage() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            {entries.length > 0 && (
+            {entries.length > 0 && calendarToken && (
               <a
-                href={getIcsUrl()}
+                href={getIcsUrl(calendarToken)}
                 title="Превземете го вашиот распоред како .ics датотека"
                 className="flex items-center gap-2 bg-white text-gray-600 border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 hover:text-finki-navy transition-colors shadow-sm"
               >

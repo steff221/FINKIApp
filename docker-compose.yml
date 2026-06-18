@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: finki_scheduler
       POSTGRES_USER: finki
@@ -15,14 +16,24 @@ services:
 
   backend:
     build: ./backend
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/exams"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/finki_scheduler
       SPRING_DATASOURCE_USERNAME: finki
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      APP_ADMIN_EMAIL: ${APP_ADMIN_EMAIL:-}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-}
       EDUPAGE_GSH: ${EDUPAGE_GSH:-00000000}
       EDUPAGE_EDITION_YEAR: ${EDUPAGE_EDITION_YEAR:-2025}
     ports:
@@ -33,10 +44,15 @@ services:
       context: ./frontend
       args:
         BACKEND_URL: http://backend:8080
+    restart: unless-stopped
     depends_on:
       - backend
-    environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     ports:
       - "3000:3000"
 

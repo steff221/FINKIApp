@@ -20,7 +20,19 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    /** Authorization role; drives the {@code ROLE_*} authority. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private Role role = Role.USER;
+
+    /** Opaque token for subscribing to this user's personal .ics feed. */
+    @Column(name = "calendar_token", unique = true, length = 64)
+    private String calendarToken;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private Instant createdAt = Instant.now();
+
+    public enum Role { USER, ADMIN }
 }

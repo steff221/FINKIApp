@@ -25,7 +25,7 @@ const CARDS = [
   },
   {
     href: "/maps",
-    title: "Карта",
+    title: "Мапа",
     desc: "Пронајдете простории, лаборатории и амфитеатри на кампусот.",
     img: "/FINKI_logo-removebg-preview.png",
     chip: "bg-amber-50",

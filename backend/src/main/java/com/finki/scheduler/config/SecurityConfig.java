@@ -1,7 +1,9 @@
 package com.finki.scheduler.config;
 
 import com.finki.scheduler.security.JwtAuthFilter;
+import com.finki.scheduler.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,6 +27,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final RateLimitFilter rateLimitFilter;
+
+    /** Comma-separated list of origins allowed to make browser requests. */
+    @Value("${app.cors.allowed-origins:http://localhost:3000}")
+    private List<String> allowedOrigins;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -37,15 +44,18 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/timetable/**").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/exams", "/api/exams/**").permitAll()
+                // Personal .ics feed authenticates itself via an opaque calendar token
+                .requestMatchers(HttpMethod.GET,  "/api/schedule/export.ics").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/consultations/bookings/**").authenticated()
                 .requestMatchers(HttpMethod.GET,  "/api/consultations/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/consultations/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/consultations/**").authenticated()
-                // Personal schedule and admin require authentication
+                // Personal schedule requires authentication; admin requires the ADMIN role
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/schedule/**").authenticated()
-                .requestMatchers("/api/admin/**").authenticated()
                 .anyRequest().authenticated()
             )
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .build();
     }
@@ -58,7 +68,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOriginPatterns(List.of("*"));
+        cfg.setAllowedOrigins(allowedOrigins);
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
         cfg.setAllowCredentials(true);

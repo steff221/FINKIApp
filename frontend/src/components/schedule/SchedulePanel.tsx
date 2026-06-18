@@ -1,13 +1,21 @@
 "use client";
 
+import useSWR from "swr";
 import type { useSchedule } from "@/hooks/useSchedule";
 import { DAY_NAMES, formatTime } from "@/types";
-import { getIcsUrl } from "@/lib/api";
+import { getIcsUrl, getIcsToken } from "@/lib/api";
 
 interface Props { schedule: ReturnType<typeof useSchedule>; }
 
 export default function SchedulePanel({ schedule }: Props) {
   const { schedule: data, conflictIds, remove } = schedule;
+
+  // Opaque token for the .ics feed URL (keeps the JWT out of the URL).
+  const { data: calendarToken } = useSWR<string>(
+    data && data.slots.length > 0 ? "/schedule/ics-token" : null,
+    () => getIcsToken(),
+    { shouldRetryOnError: false, revalidateOnFocus: false }
+  );
 
   if (!data) {
     return (
@@ -37,9 +45,9 @@ export default function SchedulePanel({ schedule }: Props) {
             </span>
           )}
         </div>
-        {data.slots.length > 0 && (
+        {data.slots.length > 0 && calendarToken && (
           <a
-            href={getIcsUrl()}
+            href={getIcsUrl(calendarToken)}
             download="finki-schedule.ics"
             className="flex items-center gap-1 text-xs text-finki-mid hover:text-finki-navy font-medium transition-colors"
           >

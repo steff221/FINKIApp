@@ -1,0 +1,32 @@
+# Production overlay — terminates TLS at Caddy and keeps the app containers off
+# the public network (only Caddy publishes ports). Usage:
+#
+#   DOMAIN=finki.example.com \
+#     docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requires DNS for DOMAIN to point at this host and ports 80/443 to be reachable.
+services:
+  backend:
+    ports: !reset []      # internal only — reached via the frontend's /api rewrite
+
+  frontend:
+    ports: !reset []      # internal only — reached via Caddy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

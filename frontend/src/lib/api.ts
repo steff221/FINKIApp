@@ -198,7 +198,13 @@ export async function deleteCustomEntry(id: number): Promise<void> {
   return del(`/schedule/custom/${id}`);
 }
 
-export function getIcsUrl(): string {
-  const token = getToken();
-  return `${BASE}/schedule/export.ics${token ? `?token=${token}` : ""}`;
+// The .ics feed is authenticated by a dedicated, opaque calendar token (fetched
+// once and safe to embed in the subscription URL) — never the user's JWT.
+export async function getIcsToken(): Promise<string> {
+  const data = await get<{ token: string }>("/schedule/ics-token");
+  return data.token;
+}
+
+export function getIcsUrl(calendarToken: string): string {
+  return `${BASE}/schedule/export.ics?token=${calendarToken}`;
 }
