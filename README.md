@@ -21,13 +21,14 @@ consultations, build a personal weekly schedule, and find rooms on a campus map.
 | Распоред | Консултации |
 |---|---|
 | <img width="1440" height="786" alt="schedule" src="https://github.com/user-attachments/assets/204ba2c1-3f29-440f-8b23-22d2b0cda41e" />
-| <img width="1440" height="788" alt="consultations" src="https://github.com/user-attachments/assets/e4eafc5e-3be7-48cb-9873-0cd348036a52" />
- |
+| <img width="1440" height="788" alt="consultations" src="https://github.com/user-attachments/assets/e4eafc5e-3be7-48cb-9873-0cd348036a52" />|
+|---|---|
 | **Мој Распоред** | **Испити** |
 | <img width="1440" height="787" alt="my schedule" src="https://github.com/user-attachments/assets/55291eef-4229-43e1-9905-5b8e0b26d0a9" />
- | <img width="1440" height="787" alt="exams" src="https://github.com/user-attachments/assets/8c98fa63-458e-4e95-ae25-7f53ec4433fc" />
- |
-| **Карта** | |
+| <img width="1440" height="787" alt="exams" src="https://github.com/user-attachments/assets/8c98fa63-458e-4e95-ae25-7f53ec4433fc" />|
+|---|---|
+
+| **Карта** | 
 | <img width="1440" height="790" alt="Campus map" src="https://github.com/user-attachments/assets/6f530486-d232-47ef-9cb2-6ae6e74f1bbc" />| |
 
 ## Tech stack
