@@ -2,10 +2,12 @@ package com.finki.scheduler.service;
 
 import com.finki.scheduler.domain.ConsultationSlot;
 import com.finki.scheduler.domain.CustomScheduleEntry;
+import com.finki.scheduler.domain.Exam;
 import com.finki.scheduler.domain.ScheduleSlot;
 import com.finki.scheduler.domain.Teacher;
 import com.finki.scheduler.repository.ConsultationSlotRepository;
 import com.finki.scheduler.repository.CustomScheduleEntryRepository;
+import com.finki.scheduler.repository.UserSavedExamRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ public class IcsExportService {
     private final UserScheduleService userScheduleService;
     private final ConsultationSlotRepository consultationSlotRepo;
     private final CustomScheduleEntryRepository customEntryRepo;
+    private final UserSavedExamRepository savedExamRepo;
 
     public String export(Long userId) {
         List<ScheduleSlot> slots = userScheduleService.getSchedule(userId);
@@ -65,8 +68,34 @@ public class IcsExportService {
             appendCustomEntry(sb, entry);
         }
 
+        // Exams the user pinned to Мој Распоред, as one-time dated events
+        for (Exam exam : savedExamRepo.findExamsByUserId(userId)) {
+            appendSavedExam(sb, exam);
+        }
+
         sb.append("END:VCALENDAR\r\n");
         return sb.toString();
+    }
+
+    private void appendSavedExam(StringBuilder sb, Exam exam) {
+        LocalTime start = exam.getStartTime() != null ? exam.getStartTime() : LocalTime.of(9, 0);
+        LocalTime end   = exam.getEndTime() != null ? exam.getEndTime()
+                        : (exam.getStartTime() != null ? exam.getStartTime().plusHours(2) : LocalTime.of(11, 0));
+
+        ZonedDateTime dtStart = ZonedDateTime.of(exam.getDate(), start, SKOPJE);
+        ZonedDateTime dtEnd   = ZonedDateTime.of(exam.getDate(), end,   SKOPJE);
+
+        sb.append("BEGIN:VEVENT\r\n");
+        sb.append("UID:saved-exam-").append(exam.getId()).append("@finki-scheduler\r\n");
+        sb.append("DTSTAMP:").append(dtStamp).append("\r\n");
+        sb.append("DTSTART;TZID=Europe/Skopje:").append(dtStart.format(ICS_DT)).append("\r\n");
+        sb.append("DTEND;TZID=Europe/Skopje:").append(dtEnd.format(ICS_DT)).append("\r\n");
+        sb.append("SUMMARY:").append(escape("Испит: " + exam.getSubjectName())).append("\r\n");
+        if (exam.getRooms() != null && !exam.getRooms().isBlank())
+            sb.append("LOCATION:").append(escape(exam.getRooms())).append("\r\n");
+        if (exam.getNote() != null && !exam.getNote().isBlank())
+            sb.append("DESCRIPTION:").append(escape(exam.getNote())).append("\r\n");
+        sb.append("END:VEVENT\r\n");
     }
 
     private void appendCustomEntry(StringBuilder sb, CustomScheduleEntry entry) {

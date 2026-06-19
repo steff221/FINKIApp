@@ -3,11 +3,13 @@ package com.finki.scheduler.service;
 import com.finki.scheduler.domain.Classroom;
 import com.finki.scheduler.domain.ConsultationSlot;
 import com.finki.scheduler.domain.CustomScheduleEntry;
+import com.finki.scheduler.domain.Exam;
 import com.finki.scheduler.domain.ScheduleSlot;
 import com.finki.scheduler.domain.Subject;
 import com.finki.scheduler.domain.Teacher;
 import com.finki.scheduler.repository.ConsultationSlotRepository;
 import com.finki.scheduler.repository.CustomScheduleEntryRepository;
+import com.finki.scheduler.repository.UserSavedExamRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,16 +34,18 @@ class IcsExportServiceTest {
     @Mock private UserScheduleService userScheduleService;
     @Mock private ConsultationSlotRepository consultationSlotRepo;
     @Mock private CustomScheduleEntryRepository customEntryRepo;
+    @Mock private UserSavedExamRepository savedExamRepo;
 
     private IcsExportService service;
 
     @BeforeEach
     void setUp() {
-        service = new IcsExportService(userScheduleService, consultationSlotRepo, customEntryRepo);
+        service = new IcsExportService(userScheduleService, consultationSlotRepo, customEntryRepo, savedExamRepo);
         // Default to empty so each test only stubs what it needs.
         lenient().when(userScheduleService.getSchedule(anyLong())).thenReturn(List.of());
         lenient().when(consultationSlotRepo.findByTeacherIdOrderByDateAscStartTimeAsc(anyLong())).thenReturn(List.of());
         lenient().when(customEntryRepo.findByUserIdOrderByDayOfWeekAscStartTimeAsc(anyLong())).thenReturn(List.of());
+        lenient().when(savedExamRepo.findExamsByUserId(anyLong())).thenReturn(List.of());
     }
 
     private ScheduleSlot classSlot(long id, String subject, String room, Teacher... teachers) {
@@ -155,6 +159,29 @@ class IcsExportServiceTest {
         // class slot carrying the teacher is weekly.
         String consultBlock = vEventBlockContaining(ics, "consult-9-3");
         assertThat(consultBlock).doesNotContain("RRULE");
+    }
+
+    @Test
+    void savedExam_emittedAsOneTimeDatedEvent() {
+        Exam exam = Exam.builder()
+            .id(11L)
+            .session("Јунска сесија 2025/26")
+            .subjectName("Дистрибуирани системи")
+            .date(LocalDate.of(2026, 6, 8))
+            .startTime(LocalTime.of(8, 0)).endTime(LocalTime.of(10, 0))
+            .rooms("117").build();
+        when(savedExamRepo.findExamsByUserId(USER_ID)).thenReturn(List.of(exam));
+
+        String ics = service.export(USER_ID);
+
+        assertThat(ics)
+            .contains("UID:saved-exam-11@finki-scheduler\r\n")
+            .contains("SUMMARY:Испит: Дистрибуирани системи\r\n")
+            .contains("LOCATION:117\r\n");
+
+        // Exams are one-off (no weekly recurrence).
+        String block = vEventBlockContaining(ics, "saved-exam-11");
+        assertThat(block).doesNotContain("RRULE");
     }
 
     /** Returns the BEGIN:VEVENT…END:VEVENT block whose body contains the given marker. */

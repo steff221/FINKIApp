@@ -8,14 +8,13 @@ A web app for FINKI students to view their class timetable, browse professor con
 
 ---
 
-
 | Feature | Description |
 |---------|-------------|
 | **Распоред** · Schedule | Full faculty timetable with filters (year, program, day, professor, room) and one-click add to your schedule. |
-| ** Консултации** · Consultations | Browse all professors and book consultation slots. |
-| ** Мој Распоред** · My Schedule | Personal weekly calendar — add classes, labs, and custom entries, then export to `.ics`. |
-| ** Испити** · Exams | All your exams in one place. |
-| ** Карта** · Map | Interactive map of the FINKI campus to locate rooms and buildings. |
+| **Консултации** · Consultations | Browse all professors and book consultation slots. |
+| **Мој Распоред** · My Schedule | Personal weekly calendar — add classes, labs, and custom entries, then export to `.ics`. |
+| **Испити** · Exams | All your exams in one place — pin any exam to your personal schedule. |
+| **Карта** · Map | Interactive map of the FINKI campus to locate rooms and buildings. |
 
 ---
 
@@ -30,22 +29,23 @@ A web app for FINKI students to view their class timetable, browse professor con
 
 ---
 
-##  Screenshots
+## Screenshots
 
 ### Landing Page
-<img width="1440" height="785" alt="landing" src="https://github.com/user-attachments/assets/46154821-227b-4151-9a67-e2ce292c395a" />
+
+<img src="photos/landing.png" alt="Landing page" width="100%" />
 
 ### Распоред · Консултации
 
 | Распоред | Консултации |
 |----------|-------------|
-| <img width="700" height="393" alt="schedule" src="https://github.com/user-attachments/assets/460c45f1-10bf-44ce-a73b-8b35e88e8c25" /> | <img width="700" height="394" alt="consultations" src="https://github.com/user-attachments/assets/d788090a-aa39-488f-8d9c-14e0a207e95e" /> |
+| <img src="photos/schedule.png" alt="Schedule" width="400" /> | <img src="photos/consultations.png" alt="Consultations" width="400" /> |
 
 ### Мој Распоред · Испити
 
 | Мој Распоред | Испити |
 |-------------|--------|
-| <img src="photos/my-schedule.png" alt="My schedule" width="350" /> | <img src="photos/exams.png" alt="Exams" width="350" /> |
+| <img src="photos/my-schedule.png" alt="My schedule" width="400" /> | <img src="photos/exams.png" alt="Exams" width="400" /> |
 
 ### Карта · Campus Map
 
@@ -53,4 +53,4 @@ A web app for FINKI students to view their class timetable, browse professor con
 
 ---
 
-**Stefan Perovski** - [@steff221](https://github.com/steff221)
+**Stefan Perovski** · [@steff221](https://github.com/steff221)

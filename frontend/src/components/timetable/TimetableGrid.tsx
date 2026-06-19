@@ -20,6 +20,13 @@ const TYPE_STYLES: Record<string, { pill: string; card: string; dot: string }> =
 };
 const FALLBACK = { pill: "bg-gray-100 text-gray-600", card: "border-l-gray-300", dot: "bg-gray-400" };
 
+// Timetable-only label overrides. LAB is shown as "Аудиториски вежби" here, while
+// the shared LESSON_TYPE_LABELS (used in Мој распоред / "Додај лаб") stays untouched.
+const TIMETABLE_TYPE_LABELS: Record<string, string> = {
+  ...LESSON_TYPE_LABELS,
+  LAB: "Аудиториски вежби",
+};
+
 const MK_DAYS_SHORT = ["Пон", "Вто", "Сре", "Чет", "Пет"];
 
 export default function TimetableGrid({ slots, schedule }: Props) {
@@ -131,7 +138,7 @@ export default function TimetableGrid({ slots, schedule }: Props) {
                                     {slot.subject.baseName}
                                   </span>
                                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${style.pill}`}>
-                                    {LESSON_TYPE_LABELS[slot.subject.lessonType]}
+                                    {TIMETABLE_TYPE_LABELS[slot.subject.lessonType]}
                                   </span>
                                   {hasConflict && (
                                     <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">

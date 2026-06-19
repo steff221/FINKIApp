@@ -180,6 +180,20 @@ export async function removeFromSchedule(slotId: number): Promise<void> {
   return del(`/schedule/slots/${slotId}`);
 }
 
+// ── Saved exams (pinned to Мој Распоред) ──────────────────────────────────────
+
+export async function getSavedExams(): Promise<ExamResponse[]> {
+  return get("/schedule/exams");
+}
+
+export async function addExamToSchedule(examId: number): Promise<void> {
+  return post(`/schedule/exams/${examId}`);
+}
+
+export async function removeExamFromSchedule(examId: number): Promise<void> {
+  return del(`/schedule/exams/${examId}`);
+}
+
 // ── Custom schedule entries ───────────────────────────────────────────────────
 
 export async function getCustomEntries(): Promise<CustomEntryResponse[]> {
