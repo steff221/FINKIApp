@@ -32,4 +32,3 @@ consultations, build a personal weekly schedule, and find rooms on a campus map.
 - **Backend** — Spring Boot (Java 21), JWT auth
 - **Database** — PostgreSQL 16
 - **Data** — class timetable scraped from EduPage; consultations scraped from the FINKI site
-</content>
