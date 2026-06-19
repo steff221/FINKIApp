@@ -8,19 +8,18 @@ A web app for FINKI students to view their class timetable, browse professor con
 
 ---
 
-## ✨ Features
 
 | Feature | Description |
 |---------|-------------|
-| **📅 Распоред** · Schedule | Full faculty timetable with filters (year, program, day, professor, room) and one-click add to your schedule. |
-| **👨‍🏫 Консултации** · Consultations | Browse all professors and book consultation slots. |
-| **📋 Мој Распоред** · My Schedule | Personal weekly calendar — add classes, labs, and custom entries, then export to `.ics`. |
-| **🎓 Испити** · Exams | All your exams in one place. |
-| **🗺️ Карта** · Map | Interactive map of the FINKI campus to locate rooms and buildings. |
+| **Распоред** · Schedule | Full faculty timetable with filters (year, program, day, professor, room) and one-click add to your schedule. |
+| ** Консултации** · Consultations | Browse all professors and book consultation slots. |
+| ** Мој Распоред** · My Schedule | Personal weekly calendar — add classes, labs, and custom entries, then export to `.ics`. |
+| ** Испити** · Exams | All your exams in one place. |
+| ** Карта** · Map | Interactive map of the FINKI campus to locate rooms and buildings. |
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -31,7 +30,7 @@ A web app for FINKI students to view their class timetable, browse professor con
 
 ---
 
-## 📸 Screenshots
+##  Screenshots
 
 ### Landing Page
 <img width="1440" height="785" alt="landing" src="https://github.com/user-attachments/assets/46154821-227b-4151-9a67-e2ce292c395a" />
@@ -53,35 +52,5 @@ A web app for FINKI students to view their class timetable, browse professor con
 <img src="photos/campus-map.png" alt="Campus map" width="700" />
 
 ---
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+
-- Java 21
-- PostgreSQL 16
-
-### Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Backend Setup
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-
----
-
-## 📝 License
-
-This project is open source and available under the MIT License.
-
----
-
-## 👤 Author
 
 **Stefan Perovski** - [@steff221](https://github.com/steff221)
