@@ -16,33 +16,35 @@ A web app for FINKI students to view their class timetable, browse professor con
 
 ---
 
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | Next.js 14 (App Router, TypeScript, Tailwind) |
+| **Backend** | Spring Boot (Java 21), JWT auth |
+| **Database** | PostgreSQL 16 |
+| **Data** | Class timetable scraped from EduPage; consultations scraped from the FINKI site |
+
+---
+
 ## Screenshots
 
 ### Landing
 
-<img src="photos/landing.png" alt="Landing page" width="600" />
+<img src="photos/REPLACE_landing.png" alt="Landing page" width="600" />
 
 ### Распоред · Консултации
 
 | Распоред | Консултации |
 |---|---|
-| <img src="photos/schedule.png" alt="Schedule" width="300" /> | <img src="photos/consultations.png" alt="Consultations" width="300" /> |
+| <img src="photos/REPLACE_schedule.png" alt="Schedule" width="300" /> | <img src="photos/REPLACE_consultations.png" alt="Consultations" width="300" /> |
 
 ### Мој Распоред · Испити
 
 | Мој Распоред | Испити |
 |---|---|
-| <img src="photos/my-schedule.png" alt="My schedule" width="300" /> | <img src="photos/exams.png" alt="Exams" width="300" /> |
+| <img src="photos/REPLACE_my-schedule.png" alt="My schedule" width="300" /> | <img src="photos/REPLACE_exams.png" alt="Exams" width="300" /> |
 
 ### Карта
 
-<img src="photos/map.png" alt="Campus map" width="600" />
-
----
-
-## Tech stack
-
-- **Frontend** — Next.js 14 (App Router, TypeScript, Tailwind)
-- **Backend** — Spring Boot (Java 21), JWT auth
-- **Database** — PostgreSQL 16
-- **Data** — class timetable scraped from EduPage; consultations scraped from the FINKI site
+<img src="photos/REPLACE_map.png" alt="Campus map" width="600" />
