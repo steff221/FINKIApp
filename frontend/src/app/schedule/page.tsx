@@ -7,10 +7,21 @@ import WeeklyCalendar, { type CalendarConsultation } from "@/components/schedule
 import AddEntryModal from "@/components/schedule/AddEntryModal";
 import AuthModal from "@/components/ui/AuthModal";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
-import type { CustomEntryResponse, CustomEntryRequest, ConsultationSlotResponse } from "@/types";
-import { getCustomEntries, createCustomEntry, updateCustomEntry, deleteCustomEntry, getIcsUrl, getIcsToken, getMyBookedConsultations } from "@/lib/api";
+import type { CustomEntryResponse, CustomEntryRequest, ConsultationSlotResponse, ExamResponse } from "@/types";
+import { formatTime } from "@/types";
+import { getCustomEntries, createCustomEntry, updateCustomEntry, deleteCustomEntry, getIcsUrl, getIcsToken, getMyBookedConsultations, getSavedExams, removeExamFromSchedule } from "@/lib/api";
 import { getAuth } from "@/lib/auth";
 import { formatDuration } from "@/lib/format";
+
+const MK_MONTHS_SHORT = ["јан", "фев", "мар", "апр", "мај", "јун", "јул", "авг", "сеп", "окт", "ное", "дек"];
+const MK_DAYS_LONG = ["Недела", "Понеделник", "Вторник", "Среда", "Четврток", "Петок", "Сабота"];
+
+/** "YYYY-MM-DD" → "Понеделник, 8 јун" (local, no timezone shift). */
+function formatExamDate(s: string): string {
+  const [y, m, d] = s.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return `${MK_DAYS_LONG[date.getDay()]}, ${d} ${MK_MONTHS_SHORT[m - 1]}`;
+}
 
 const SWR_KEY = "/schedule/custom";
 
@@ -52,6 +63,20 @@ export default function SchedulePage() {
     () => getIcsToken(),
     { shouldRetryOnError: false, revalidateOnFocus: false }
   );
+
+  // Exams the user pinned from the Испити page — shown as a dated list (not on the weekly grid).
+  const { data: savedExams = [] } = useSWR<ExamResponse[]>(
+    auth ? "/schedule/exams" : null,
+    () => getSavedExams(),
+    { shouldRetryOnError: false }
+  );
+
+  const handleRemoveExam = useCallback(async (examId: number) => {
+    await globalMutate("/schedule/exams", (prev?: ExamResponse[]) => (prev ?? []).filter(e => e.id !== examId), false);
+    await removeExamFromSchedule(examId);
+    await globalMutate("/schedule/exams");
+    showToast("Испитот е отстранет");
+  }, [showToast]);
 
   // Map each upcoming booked consultation onto its weekday (0=Mon … 4=Fri) so it
   // shows alongside custom entries on the weekly grid. Past bookings are dropped.
@@ -266,6 +291,46 @@ export default function SchedulePage() {
           </div>
         )}
 
+        {/* Saved exams — dated list (separate from the weekly grid) */}
+        {savedExams.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden mb-4">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+              <span className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-rose-600">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+                </svg>
+              </span>
+              <h2 className="text-sm font-bold text-gray-900">Испити</h2>
+              <span className="text-xs font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5">{savedExams.length}</span>
+            </div>
+            <ul className="divide-y divide-gray-50">
+              {savedExams.map(exam => (
+                <li key={exam.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50/60 transition-colors">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{exam.subjectName}</p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-xs text-gray-500">
+                      <span className="font-medium text-gray-700 capitalize">{formatExamDate(exam.date)}</span>
+                      {exam.startTime && (
+                        <span>{formatTime(exam.startTime)}{exam.endTime ? `–${formatTime(exam.endTime)}` : ""}</span>
+                      )}
+                      {exam.rooms && <span>{exam.rooms}</span>}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveExam(exam.id)}
+                    title="Отстрани испит"
+                    aria-label="Отстрани испит"
+                    className="shrink-0 w-7 h-7 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Calendar */}
         {isLoading ? (
           <div className="bg-white rounded-2xl border border-gray-100 h-96 flex items-center justify-center">
@@ -287,7 +352,7 @@ export default function SchedulePage() {
               </button>
             </div>
           </div>
-        ) : entries.length === 0 && consultationEntries.length === 0 ? (
+        ) : entries.length === 0 && consultationEntries.length === 0 && savedExams.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 flex flex-col items-center justify-center py-16 gap-4">
             <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center">
               <Image src="/Callendar.png" alt="" width={32} height={32} className="object-contain opacity-25" />

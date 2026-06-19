@@ -1,10 +1,12 @@
 package com.finki.scheduler.controller;
 
 import com.finki.scheduler.domain.User;
+import com.finki.scheduler.dto.response.ExamResponse;
 import com.finki.scheduler.dto.response.ScheduleSlotResponse;
 import com.finki.scheduler.dto.response.UserScheduleResponse;
 import com.finki.scheduler.repository.UserRepository;
 import com.finki.scheduler.service.IcsExportService;
+import com.finki.scheduler.service.SavedExamService;
 import com.finki.scheduler.service.UserScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -25,6 +27,7 @@ import java.util.UUID;
 public class ScheduleController {
 
     private final UserScheduleService scheduleService;
+    private final SavedExamService savedExamService;
     private final IcsExportService icsExportService;
     private final UserRepository userRepo;
 
@@ -47,6 +50,28 @@ public class ScheduleController {
     public ResponseEntity<Void> removeSlot(@AuthenticationPrincipal User user,
                                             @PathVariable Long slotId) {
         scheduleService.removeSlot(user.getId(), slotId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Saved exams (pinned to Мој Распоред) ──────────────────────────────────
+
+    @GetMapping("/exams")
+    public List<ExamResponse> getSavedExams(@AuthenticationPrincipal User user) {
+        return savedExamService.getSavedExams(user.getId())
+            .stream().map(ExamResponse::from).toList();
+    }
+
+    @PostMapping("/exams/{examId}")
+    public ResponseEntity<Void> addExam(@AuthenticationPrincipal User user,
+                                         @PathVariable Long examId) {
+        savedExamService.addExam(user.getId(), examId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/exams/{examId}")
+    public ResponseEntity<Void> removeExam(@AuthenticationPrincipal User user,
+                                            @PathVariable Long examId) {
+        savedExamService.removeExam(user.getId(), examId);
         return ResponseEntity.noContent().build();
     }
 

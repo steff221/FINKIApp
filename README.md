@@ -3,6 +3,10 @@
 A web app for FINKI students to view their class timetable, browse professor
 consultations, build a personal weekly schedule, and find rooms on a campus map.
 
+<p align="center">
+  <img src="README_photos/landing.png" alt="ФИНКИ Распоред — home" width="100%" />
+</p>
+
 ## Features
 
 | | |
@@ -16,9 +20,11 @@ consultations, build a personal weekly schedule, and find rooms on a campus map.
 
 | Распоред | Консултации |
 |---|---|
-| ![Schedule](photos/schedule.png) | ![Consultations](photos/consultations.png) |
-| **Мој Распоред** | **Карта** |
-| ![My Schedule](photos/my-schedule.png) | ![Campus Map](photos/campus-map.png) |
+| ![Schedule](README_photos/schedule.png) | ![Consultations](README_photos/consultations.png) |
+| **Испити** | **Мој Распоред** |
+| ![Exams](README_photos/exams.png) | ![My Schedule](README_photos/my%20schedule.png) |
+| **Карта** | **Почетна** |
+| ![Campus Map](README_photos/Campus%20map.png) | ![Home](README_photos/landing.png) |
 
 ## Tech stack
 
@@ -26,5 +32,4 @@ consultations, build a personal weekly schedule, and find rooms on a campus map.
 - **Backend** — Spring Boot (Java 21), JWT auth
 - **Database** — PostgreSQL 16
 - **Data** — class timetable scraped from EduPage; consultations scraped from the FINKI site
-
-
+</content>

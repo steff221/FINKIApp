@@ -24,10 +24,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Exercises the matching priority chain in {@link TeacherMatcherService#tryMatch}:
- * manual override → exact → high-confidence fuzzy → low-confidence fuzzy → no match.
- */
+
 @ExtendWith(MockitoExtension.class)
 class TeacherMatcherChainTest {
 

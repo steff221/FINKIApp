@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import useSWR from "swr";
-import { getExams, getExamSessions, getExamsIcsUrl } from "@/lib/api";
+import { getExams, getExamSessions, getExamsIcsUrl, getSavedExams, addExamToSchedule, removeExamFromSchedule } from "@/lib/api";
 import type { ExamResponse } from "@/types";
 import { formatTime } from "@/types";
+import { isLoggedIn } from "@/lib/auth";
 
 const MK_MONTHS = [
   "јануари", "февруари", "март", "април", "мај", "јуни",
@@ -36,6 +37,30 @@ export default function ExamsPage() {
     activeSession ? ["/api/exams", activeSession] : "/api/exams",
     () => getExams(activeSession)
   );
+
+  // The exams this user has pinned to Мој Распоред (only when logged in).
+  const loggedIn = isLoggedIn();
+  const { data: savedExams, mutate: mutateSaved } = useSWR<ExamResponse[]>(
+    loggedIn ? "/schedule/exams" : null,
+    () => getSavedExams()
+  );
+  const savedIds = useMemo(() => new Set((savedExams ?? []).map(e => e.id)), [savedExams]);
+
+  const toggleSaved = useCallback(async (exam: ExamResponse, saved: boolean) => {
+    // Optimistic update so the button flips instantly.
+    mutateSaved(
+      prev => saved
+        ? (prev ?? []).filter(e => e.id !== exam.id)
+        : [...(prev ?? []), exam],
+      false,
+    );
+    try {
+      if (saved) await removeExamFromSchedule(exam.id);
+      else await addExamToSchedule(exam.id);
+    } finally {
+      mutateSaved();
+    }
+  }, [mutateSaved]);
 
   // Client-side subject filter + group by date.
   const grouped = useMemo(() => {
@@ -165,7 +190,30 @@ export default function ExamsPage() {
                     key={exam.id}
                     className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 hover:border-finki-navy hover:shadow-md transition-all"
                   >
-                    <p className="text-sm font-semibold text-gray-900 leading-snug">{exam.subjectName}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-gray-900 leading-snug">{exam.subjectName}</p>
+                      {loggedIn && (() => {
+                        const saved = savedIds.has(exam.id);
+                        return (
+                          <button
+                            onClick={() => toggleSaved(exam, saved)}
+                            title={saved ? "Отстрани од Мој Распоред" : "Додај во Мој Распоред"}
+                            aria-label={saved ? "Отстрани од Мој Распоред" : "Додај во Мој Распоред"}
+                            className={`shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg border transition-colors ${
+                              saved
+                                ? "bg-finki-navy border-finki-navy text-white hover:bg-finki-mid"
+                                : "bg-white border-gray-200 text-gray-400 hover:border-finki-navy hover:text-finki-navy"
+                            }`}
+                          >
+                            {saved ? (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6 9 17l-5-5" /></svg>
+                            ) : (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+                            )}
+                          </button>
+                        );
+                      })()}
+                    </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
                       {exam.startTime && (
                         <span className="inline-flex items-center gap-1 font-medium text-gray-700">
