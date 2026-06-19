@@ -9,7 +9,8 @@ consultations, build a personal weekly schedule, and find rooms on a campus map.
 |---|---|
 | **Распоред [Schedule]** | Full faculty timetable with filters (year, program, day, professor, room) and one-click add to your schedule. |
 | **Консултации[Consultations]** | Browse all professors and book consultation slots. |
-| **Мој Распоред[My Schedule]** | Your personal weekly calendar — add classes, labs, and custom entries, then export to `.ics`. |
+| **Мој Распоред[My Schedule]** | Your personal weekly calendar — add classes, labs, and custom entries, then export to `.ics`. 
+| **Испити[Exams]** | All your exams in one place. |
 | **Карта[Map]** | Interactive map of the FINKI campus to locate rooms and buildings. |
 
 ### Screenshots
