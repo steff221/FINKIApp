@@ -36,8 +36,9 @@ A web app for FINKI students to view their class timetable, browse professor con
 
 ### Мој Распоред · Испити
 | Мој Распоред | Испити |
-| <img width="1440" height="786" alt="schedule" src="https://github.com/user-attachments/assets/89f25379-1c48-4af6-9854-dc9fbf9d0874" /> 
-| <img src="photos/REPLACE_exams.png" alt="Exams" width="300" /> |
+| <img src="photos/my-schedule.png" alt="My schedule" width="600" /> |
+| <img src="photos/exams.png" alt="Exams" width="300" /> |
 
 ### Карта
-<img src="photos/REPLACE_map.png" alt="Campus map" width="600" />
+<img src="photos/campus-map.png" alt="Campus map" width="600" />
+
