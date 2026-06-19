@@ -41,4 +41,3 @@ A web app for FINKI students to view their class timetable, browse professor con
 
 ### Карта
 <img src="photos/campus-map.png" alt="Campus map" width="600" />
-
