@@ -1,34 +1,56 @@
-# ФИНКИ Распоред [FINKI SCHEDULE]
+# ФИНКИ Распоред · FINKI Schedule
 
-A web app for FINKI students to view their class timetable, browse professor
-consultations, build a personal weekly schedule, and find rooms on a campus map.
+A web app for FINKI students to view their class timetable, browse professor consultations, build a personal weekly schedule, track exams, and find rooms on a campus map.
 
-<p align="center">
-  <img src="README_photos/landing.png" alt="ФИНКИ Распоред — home" width="100%" />
-</p>
+![TypeScript](https://img.shields.io/badge/TypeScript-55.1%25-3178C6?logo=typescript)
+![Java](https://img.shields.io/badge/Java-44.1%25-007396?logo=java)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-## Features
+---
 
-| | |
-|---|---|
-| **Распоред [Schedule]** | Full faculty timetable with filters (year, program, day, professor, room) and one-click add to your schedule. |
-| **Консултации[Consultations]** | Browse all professors and book consultation slots. |
-| **Мој Распоред[My Schedule]** | Your personal weekly calendar — add classes, labs, and custom entries, then export to `.ics`. |
-| **Карта[Map]** | Interactive map of the FINKI campus to locate rooms and buildings. |
+| Feature | Description |
+|---------|-------------|
+| **Распоред** · Schedule | Full faculty timetable with filters (year, program, day, professor, room) and one-click add to your schedule. |
+| **Консултации** · Consultations | Browse all professors and book consultation slots. |
+| **Мој Распоред** · My Schedule | Personal weekly calendar — add classes, labs, and custom entries, then export to `.ics`. |
+| **Испити** · Exams | All your exams in one place — pin any exam to your personal schedule. |
+| **Карта** · Map | Interactive map of the FINKI campus to locate rooms and buildings. |
 
-### Screenshots
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | Next.js 14 (App Router, TypeScript, Tailwind CSS) |
+| **Backend** | Spring Boot (Java 21), JWT Authentication |
+| **Database** | PostgreSQL 16 |
+| **Data** | Class timetable from EduPage; consultations from FINKI website |
+
+---
+
+## Screenshots
+
+### Landing Page
+
+<img src="photos/landing.png" alt="Landing page" width="100%" />
+
+### Распоред · Консултации
 
 | Распоред | Консултации |
-|---|---|
-| ![Schedule](README_photos/schedule.png) | ![Consultations](README_photos/consultations.png) |
-| **Испити** | **Мој Распоред** |
-| ![Exams](README_photos/exams.png) | ![My Schedule](README_photos/my%20schedule.png) |
-| **Карта** | **Почетна** |
-| ![Campus Map](README_photos/Campus%20map.png) | ![Home](README_photos/landing.png) |
+|----------|-------------|
+| <img src="photos/schedule.png" alt="Schedule" width="400" /> | <img src="photos/consultations.png" alt="Consultations" width="400" /> |
 
-## Tech stack
+### Мој Распоред · Испити
 
-- **Frontend** — Next.js 14 (App Router, TypeScript, Tailwind)
-- **Backend** — Spring Boot (Java 21), JWT auth
-- **Database** — PostgreSQL 16
-- **Data** — class timetable scraped from EduPage; consultations scraped from the FINKI site
+| Мој Распоред | Испити |
+|-------------|--------|
+| <img src="photos/my-schedule.png" alt="My schedule" width="400" /> | <img src="photos/exams.png" alt="Exams" width="400" /> |
+
+### Карта · Campus Map
+
+<img src="photos/campus-map.png" alt="Campus map" width="700" />
+
+---
+
+**Stefan Perovski** · [@steff221](https://github.com/steff221)
