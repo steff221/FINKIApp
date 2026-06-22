@@ -1,3 +1,5 @@
+
+
 # ФИНКИ Распоред · FINKI Schedule
 
 A web and mobile app for FINKI students to view their class timetable, browse professor consultations, build a personal weekly schedule, track exams, and find rooms on a campus map.
