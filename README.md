@@ -1,10 +1,21 @@
 # ФИНКИ Распоред · FINKI Schedule
 
-A web app for FINKI students to view their class timetable, browse professor consultations, build a personal weekly schedule, track exams, and find rooms on a campus map.
+A web and mobile app for FINKI students to view their class timetable, browse professor consultations, build a personal weekly schedule, track exams, and find rooms on a campus map.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-55.1%25-3178C6?logo=typescript)
 ![Java](https://img.shields.io/badge/Java-44.1%25-007396?logo=java)
+![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter)
 ![License](https://img.shields.io/badge/License-MIT-green)
+
+---
+
+## Demo
+
+A short walkthrough — browse the faculty timetable, build a personal weekly schedule, check professor consultations and exams, and find rooms on the campus map.
+
+<!-- 📹 Add the video: open this README on GitHub → Edit (✏️) → drag your screen recording onto the line below.
+     GitHub uploads it and turns it into an inline player. Then remove this comment and the placeholder line. -->
+<p align="center"><em>▶️ Demo video coming soon</em></p>
 
 ---
 
