@@ -25,3 +25,6 @@ Thumbs.db
 
 # Docker
 *.log
+
+# Claude Code local settings/memory
+.claude/
