@@ -15,9 +15,9 @@ A web and mobile app for FINKI students to view their class timetable, browse pr
 
 A short walkthrough — browse the faculty timetable, build a personal weekly schedule, check professor consultations and exams, and find rooms on the campus map.
 
-<!-- 📹 Add the video: open this README on GitHub → Edit (✏️) → drag your screen recording onto the line below.
-     GitHub uploads it and turns it into an inline player. Then remove this comment and the placeholder line. -->
-<p align="center"><em>▶️ Demo video coming soon</em></p>
+<p align="center">
+  <video src="https://github.com/steff221/FINKIApp/raw/main/photos/demo.mp4" controls width="300"></video>
+</p>
 
 ---
 
