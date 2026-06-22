@@ -121,6 +121,22 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
     return m;
   }, [slots]);
 
+  // Map a subject baseName → ALL its real slots (any teacher), sorted by day/time.
+  // Lets us auto-fill day/time/room the moment a subject is picked, before a
+  // specific professor is chosen.
+  const subjectSlots = useMemo(() => {
+    const m = new Map<string, ScheduleSlotResponse[]>();
+    slots?.forEach(slot => {
+      const key = slot.subject.baseName;
+      if (!key) return;
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(slot);
+    });
+    m.forEach(list => list.sort((a, b) =>
+      a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime)));
+    return m;
+  }, [slots]);
+
   // Suppresses the auto-end-time effect when we prefill start+end from a real slot
   const prefilling = useRef(false);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -189,14 +205,27 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
     // but don't override explicit lab mode — user made a deliberate choice
     const matchedType = subjectTypeMap.get(value);
     if (matchedType && entryType !== "LAB") setEntryType(matchedType);
-    // Clear professor if it no longer teaches the newly selected subject
+
     const teachers = subjectTeacherMap.get(value);
-    if (teachers && teachers.size > 0 && professor && !teachers.has(professor)) {
-      setProfessor("");
-    } else if (professor) {
-      // Subject + professor still valid together → fill from the first real session
+    // Keep the current professor only if they actually teach the new subject.
+    const keepProfessor = !!professor && (teachers?.has(professor) ?? false);
+    if (professor && !keepProfessor) setProfessor("");
+
+    if (keepProfessor) {
+      // Subject + professor still valid together → fill from their first session
       const list = subjectTeacherSlots.get(`${value}||${professor}`) ?? [];
       if (list.length > 0) { setSessionIdx(0); applySlot(list[0]); }
+    } else {
+      // No professor yet → auto-fill day/time/room from the subject's first real
+      // session, adopting that session's teacher (the user can still change it).
+      const list = subjectSlots.get(value) ?? [];
+      if (list.length > 0) {
+        const first = list[0];
+        const teacher = first.teachers.find(t => t.cyrillicName)?.cyrillicName ?? "";
+        if (teacher) setProfessor(teacher);
+        setSessionIdx(0);
+        applySlot(first);
+      }
     }
   }
 

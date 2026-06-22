@@ -2,6 +2,7 @@ package com.finki.scheduler.service.ingestion;
 
 import com.finki.scheduler.domain.IngestionLog;
 import com.finki.scheduler.repository.IngestionLogRepository;
+import com.finki.scheduler.service.AlertService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -28,6 +29,7 @@ public class ScheduledIngestionJob {
     private final EduPageIngestionService edupageService;
     private final ConsultationScraperService consultationService;
     private final IngestionLogRepository ingestionLogRepo;
+    private final AlertService alertService;
 
     private final AtomicBoolean timetableRunning    = new AtomicBoolean(false);
     private final AtomicBoolean consultationsRunning = new AtomicBoolean(false);
@@ -85,7 +87,14 @@ public class ScheduledIngestionJob {
         }
         try {
             log.info("Starting timetable ingestion");
-            return edupageService.ingest();
+            int n = edupageService.ingest();
+            if (n == 0) {
+                alertService.warn("Timetable ingestion stored 0 cards — the EduPage source may have changed.");
+            }
+            return n;
+        } catch (RuntimeException e) {
+            alertService.error("Timetable ingestion FAILED: " + e.getMessage());
+            throw e;
         } finally {
             timetableRunning.set(false);
         }
@@ -98,7 +107,15 @@ public class ScheduledIngestionJob {
         }
         try {
             log.info("Starting consultation scrape");
-            return consultationService.scrape();
+            int n = consultationService.scrape();
+            if (n == 0) {
+                alertService.warn("Consultations scrape stored 0 slots — the site layout may have changed "
+                    + "(or there are genuinely no upcoming consultations).");
+            }
+            return n;
+        } catch (RuntimeException e) {
+            alertService.error("Consultations scrape FAILED: " + e.getMessage());
+            throw e;
         } finally {
             consultationsRunning.set(false);
         }

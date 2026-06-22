@@ -38,23 +38,32 @@ export default function NavBar() {
           {/* Nav links */}
           <div className="flex items-center gap-1">
             {[
-              { href: "/timetable",     label: "Распоред" },
-              { href: "/consultations", label: "Консултации" },
-              { href: "/exams",         label: "Испити" },
-              { href: "/schedule",      label: "Мој Распоред" },
-              { href: "/maps",          label: "Карта" },
-            ].map(({ href, label }) => {
+              { href: "/timetable",     label: "Распоред",     img: "/schedule.png" },
+              { href: "/consultations", label: "Консултации",  img: "/clock.png" },
+              { href: "/exams",         label: "Испити",       img: "/exam.png" },
+              { href: "/schedule",      label: "Мој Распоред", img: "/calendar.png" },
+              { href: "/maps",          label: "Карта",        img: "/campus%20map.png" },
+            ].map(({ href, label, img }) => {
               const active = pathname.startsWith(href);
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                     active
                       ? "bg-white/15 text-white"
                       : "text-white/65 hover:text-white hover:bg-white/10"
                   }`}
                 >
+                  {/* Public-folder icons are dark glyphs — invert to white for the navy bar */}
+                  <Image
+                    src={img}
+                    alt=""
+                    width={18}
+                    height={18}
+                    className={`object-contain transition-opacity ${active ? "opacity-100" : "opacity-70"}`}
+                    style={{ filter: "brightness(0) invert(1)" }}
+                  />
                   {label}
                   {active && (
                     <span className="absolute bottom-0.5 left-4 right-4 h-0.5 bg-blue-300 rounded-full" />

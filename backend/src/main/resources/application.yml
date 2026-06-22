@@ -43,6 +43,10 @@ app:
   admin:
     email: ${APP_ADMIN_EMAIL:}
     password: ${APP_ADMIN_PASSWORD:}
+  # Operational alerts (scraper failed / stored 0 records) are POSTed to this
+  # webhook. Works with a Slack or Discord incoming webhook URL. Blank = log only.
+  alerts:
+    webhook-url: ${APP_ALERTS_WEBHOOK_URL:}
 
 edupage:
   base-url: https://finki.edupage.org

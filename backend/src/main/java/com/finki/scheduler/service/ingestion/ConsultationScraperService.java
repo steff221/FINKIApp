@@ -133,37 +133,53 @@ public class ConsultationScraperService {
         // Delete old slots before writing new ones
         consultationSlotRepo.deleteByTeacherId(teacher.getId());
 
-        // Check for "no upcoming" message
-        if (doc.text().contains("Нема закажани")) {
+        // Each consultation is a card; fields are labelled info-items keyed by icon:
+        //   fa-calendar-alt → date, fa-clock → time, fa-door-open → room,
+        //   fa-clipboard-list → instructions.
+        Elements cards = doc.select("div.consultation-card");
+        if (cards.isEmpty() || doc.text().contains("Нема закажани")) {
             log.debug("No upcoming slots for {}", prof.username());
             return 0;
         }
 
-        // Parse the slots table
         int count = 0;
-        for (Element row : doc.select("table tbody tr")) {
-            Elements cells = row.select("td");
-            if (cells.size() < 3) continue;
+        for (Element card : cards) {
             try {
-                LocalDate date = dateParser.parseDate(cells.get(0).text());
-                LocalTime[] times = dateParser.parseTimeRange(cells.get(1).text());
-                String room = cells.get(2).text().trim();
-                String instructions = cells.size() >= 4 ? cells.get(3).text().trim() : null;
+                String dateStr = infoItemValue(card, "i.fa-calendar-alt");
+                String timeStr = infoItemValue(card, "i.fa-clock");
+                if (dateStr == null || timeStr == null) continue;
+
+                LocalDate date = dateParser.parseDate(dateStr);
+                LocalTime[] times = dateParser.parseTimeRange(timeStr);
+                String room = infoItemValue(card, "i.fa-door-open");
+                String instructions = infoItemValue(card, "i.fa-clipboard-list");
 
                 consultationSlotRepo.save(ConsultationSlot.builder()
                     .teacher(teacher)
                     .date(date)
                     .startTime(times[0])
                     .endTime(times[1])
-                    .room(room.isEmpty() ? null : room)
+                    .room(room == null || room.isEmpty() ? null : room)
                     .instructions(instructions == null || instructions.isEmpty() ? null : instructions)
                     .build());
                 count++;
             } catch (Exception e) {
-                log.warn("Skipping malformed row for {}: {}", prof.username(), e.getMessage());
+                log.warn("Skipping malformed card for {}: {}", prof.username(), e.getMessage());
             }
         }
         return count;
+    }
+
+    /**
+     * Returns the value of a card's info-item identified by its icon, e.g. the
+     * date for {@code i.fa-calendar-alt}. The value is the first {@code <span>}
+     * after the {@code <strong>} label (relative-time badges come after it).
+     */
+    private String infoItemValue(Element card, String iconSelector) {
+        Element item = card.selectFirst("div.info-item:has(" + iconSelector + ")");
+        if (item == null) return null;
+        Element span = item.selectFirst("div > span");
+        return span == null ? null : span.text().trim();
     }
 
     private Teacher resolveTeacher(String username, String cyrillicName) {

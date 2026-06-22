@@ -1,0 +1,52 @@
+name: finki_scheduler
+description: "ФИНКИ Распоред — mobile app for FINKI students."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.5.1         # state management
+  go_router: ^14.2.0              # declarative routing + auth guard
+  dio: ^5.5.0                     # HTTP client (JWT interceptor)
+  flutter_secure_storage: ^9.2.2  # JWT token storage
+  google_fonts: ^6.2.1            # Inter, to match the web app
+  intl: ^0.19.0                   # Macedonian date/number formatting
+  webview_flutter: ^4.9.0         # campus map WebView
+  flutter_native_splash: ^2.4.3   # native launch screen (no white flash)
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/finki_logo.png
+    - assets/nav_schedule.png
+    - assets/nav_consultations.png
+    - assets/nav_exams.png
+    - assets/nav_myschedule.png
+    - assets/nav_map.png
+
+flutter_native_splash:
+  color: "#00265C"
+  image: assets/finki_logo.png
+  color_dark: "#00265C"
+  image_dark: assets/finki_logo.png
+  android: false
+  ios: true
+  web: false
+
+flutter_launcher_icons:
+  image_path: "assets/finki_logo.png"
+  ios: true
+  android: false
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
