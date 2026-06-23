@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +20,11 @@ import '../../core/theme/app_colors.dart';
 //   • Ground shadow   → ellipse grows wider/lighter when logo is high
 //   • 3 diminishing bounces (damping ratio ≈ 0.38)
 //   • After settle: title slides up, subtitle fades, dots appear
+//
+//  Hand-off:
+//   • Brief anticipation (text fades, logo dips), then the logo's circle
+//     expands into a portal that reveals the destination screen growing
+//     out of it (circular reveal centered on the logo).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const _logoSize = 100.0;
@@ -54,6 +61,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _subOpacity;
 
   late final AnimationController _dots;
+
+  // Anticipation before the reveal (fades text, dips the logo)
+  late final AnimationController _exit;
+
+  // Measures the logo so the reveal originates exactly on it
+  final GlobalKey _logoKey = GlobalKey();
 
   @override
   void initState() {
@@ -198,20 +211,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         vsync: this, duration: const Duration(milliseconds: 900))
       ..repeat();
 
+    // ── Anticipation (text fades out, logo dips ~15%) ────────────────────────
+    _exit = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 260));
+
     // ── Sequence ──────────────────────────────────────────────────────────────
     _bounce.forward().then((_) async {
       await _text.forward().orCancel;
       // Brief hold so the dots are visible before we leave.
-      await Future.delayed(const Duration(milliseconds: 700));
+      await Future.delayed(const Duration(milliseconds: 600));
       if (!mounted) return;
-      final status = ref.read(authControllerProvider).status;
+      var status = ref.read(authControllerProvider).status;
       // If auth check is still in progress, wait up to 2 s more.
       if (status == AuthStatus.unknown) {
         await Future.delayed(const Duration(milliseconds: 2000));
       }
       if (!mounted) return;
-      final finalStatus = ref.read(authControllerProvider).status;
-      context.go(finalStatus == AuthStatus.authenticated ? '/timetable' : '/login');
+      status = ref.read(authControllerProvider).status;
+      final destination =
+          status == AuthStatus.authenticated ? '/timetable' : '/login';
+
+      // Anticipation, then the circular "O" reveal hands off to the app.
+      await _exit.forward().orCancel;
+      if (!mounted) return;
+      _startReveal(destination);
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -219,11 +242,35 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     });
   }
 
+  /// Navigates to [destination] and overlays a circular reveal, centered on the
+  /// logo, that wipes the splash away to expose the destination beneath it.
+  void _startReveal(String destination) {
+    final box = _logoKey.currentContext?.findRenderObject() as RenderBox?;
+    final size = MediaQuery.of(context).size;
+    final center = (box != null && box.hasSize)
+        ? box.localToGlobal(box.size.center(Offset.zero))
+        : size.center(Offset.zero);
+
+    final overlay = Overlay.of(context, rootOverlay: true);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => _RevealTransition(
+        center: center,
+        onDone: () => entry.remove(),
+      ),
+    );
+
+    // Reveal the destination underneath, then play the wipe on top of it.
+    context.go(destination);
+    overlay.insert(entry);
+  }
+
   @override
   void dispose() {
     _bounce.dispose();
     _text.dispose();
     _dots.dispose();
+    _exit.dispose();
     super.dispose();
   }
 
@@ -241,18 +288,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               child: Stack(
                 alignment: Alignment.bottomCenter,
                 children: [
-                  // Ground shadow
+                  // Ground shadow (fades out during the anticipation)
                   Positioned(
                     bottom: 0,
                     child: AnimatedBuilder(
-                      animation: _bounce,
+                      animation: Listenable.merge([_bounce, _exit]),
                       builder: (_, _) => Container(
                         width: _shadowW.value,
                         height: 10,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(999),
-                          color: Colors.black
-                              .withValues(alpha: _shadowO.value * 0.45),
+                          color: Colors.black.withValues(
+                              alpha: _shadowO.value * 0.45 * (1 - _exit.value)),
                         ),
                       ),
                     ),
@@ -261,20 +308,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   Positioned(
                     bottom: 10, // sits just above the shadow
                     child: AnimatedBuilder(
-                      animation: _bounce,
-                      builder: (_, _) => Transform.translate(
-                        offset: Offset(0, _posY.value),
-                        child: Transform(
-                          alignment: Alignment.bottomCenter,
-                          transform: Matrix4.diagonal3Values(
-                              _scaleX.value, _scaleY.value, 1.0),
-                          child: Image.asset(
-                            'assets/finki_logo.png',
-                            width: _logoSize,
-                            height: _logoSize,
+                      animation: Listenable.merge([_bounce, _exit]),
+                      builder: (_, _) {
+                        final dip = 1.0 - 0.15 * _exit.value; // anticipation dip
+                        return Transform.translate(
+                          offset: Offset(0, _posY.value),
+                          child: Transform(
+                            alignment: Alignment.bottomCenter,
+                            transform: Matrix4.diagonal3Values(
+                                _scaleX.value * dip, _scaleY.value * dip, 1.0),
+                            child: Image.asset(
+                              'assets/finki_logo.png',
+                              key: _logoKey,
+                              width: _logoSize,
+                              height: _logoSize,
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -285,9 +336,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
             // ── Title ─────────────────────────────────────────────────────────
             AnimatedBuilder(
-              animation: _text,
+              animation: Listenable.merge([_text, _exit]),
               builder: (_, _) => Opacity(
-                opacity: _titleOpacity.value,
+                opacity: _titleOpacity.value * (1 - _exit.value),
                 child: Transform.translate(
                   offset: Offset(0, _titleY.value),
                   child: const Text(
@@ -307,9 +358,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
             // ── Subtitle ──────────────────────────────────────────────────────
             AnimatedBuilder(
-              animation: _text,
+              animation: Listenable.merge([_text, _exit]),
               builder: (_, _) => Opacity(
-                opacity: _subOpacity.value,
+                opacity: _subOpacity.value * (1 - _exit.value),
                 child: Text(
                   'Распоред за студенти на ФИНКИ',
                   style: TextStyle(
@@ -322,11 +373,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
             const SizedBox(height: 64),
 
-            // ── Bouncing dots (appear after logo settles) ─────────────────────
+            // ── Bouncing dots (appear after logo settles, fade out on exit) ───
             AnimatedBuilder(
-              animation: Listenable.merge([_bounce, _dots]),
+              animation: Listenable.merge([_bounce, _dots, _exit]),
               builder: (_, _) => AnimatedOpacity(
-                opacity: _bounce.isCompleted ? 1.0 : 0.0,
+                opacity: _bounce.isCompleted ? (1.0 - _exit.value) : 0.0,
                 duration: const Duration(milliseconds: 300),
                 child: _BouncingDots(progress: _dots.value),
               ),
@@ -336,6 +387,116 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Circular reveal hand-off
+//
+//  A navy layer with a growing circular "hole" centred on the logo. As the hole
+//  expands, the destination screen (already mounted beneath) is revealed; the
+//  logo blooms and fades so it reads as the logo opening up into the app.
+// ─────────────────────────────────────────────────────────────────────────────
+class _RevealTransition extends StatefulWidget {
+  final Offset center;
+  final VoidCallback onDone;
+  const _RevealTransition({required this.center, required this.onDone});
+
+  @override
+  State<_RevealTransition> createState() => _RevealTransitionState();
+}
+
+class _RevealTransitionState extends State<_RevealTransition>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 720))
+      ..addStatusListener((s) {
+        if (s == AnimationStatus.completed) widget.onDone();
+      })
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  double _maxRadius(Offset c, Size s) {
+    final dx = math.max(c.dx, s.width - c.dx);
+    final dy = math.max(c.dy, s.height - c.dy);
+    return math.sqrt(dx * dx + dy * dy) + 8;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final maxR = _maxRadius(widget.center, size);
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (_, _) {
+          final t = _c.value;
+          final radius = Curves.easeInOutCubic.transform(t) * maxR;
+          // Logo blooms + fades over the first ~45% of the wipe.
+          final bloom = Curves.easeOut.transform((t / 0.45).clamp(0.0, 1.0));
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _HolePainter(
+                    center: widget.center,
+                    radius: radius,
+                    color: AppColors.navy,
+                  ),
+                ),
+              ),
+              Positioned(
+                left: widget.center.dx - _logoSize / 2,
+                top: widget.center.dy - _logoSize / 2,
+                child: Opacity(
+                  opacity: 1.0 - bloom,
+                  child: Transform.scale(
+                    scale: 0.85 + 0.95 * bloom,
+                    child: Image.asset(
+                      'assets/finki_logo.png',
+                      width: _logoSize,
+                      height: _logoSize,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HolePainter extends CustomPainter {
+  final Offset center;
+  final double radius;
+  final Color color;
+  _HolePainter(
+      {required this.center, required this.radius, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRect(Offset.zero & size)
+      ..addOval(Rect.fromCircle(center: center, radius: radius))
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_HolePainter old) =>
+      old.radius != radius || old.center != center || old.color != color;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

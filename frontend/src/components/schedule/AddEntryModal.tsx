@@ -148,8 +148,9 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
     setStart(slot.startTime.substring(0, 5));
     setEnd(slot.endTime.substring(0, 5));
     if (slot.classroom?.name) setRoom(slot.classroom.name);
-    // Don't override explicit lab mode — user made a deliberate choice
-    if (entryType !== "LAB") setEntryType(slot.subject.lessonType);
+    // NB: the lesson type is set once on subject-select; we deliberately do NOT
+    // re-set it here, so the user's manual Тип toggle is respected when they pick
+    // a professor or a different session.
   }
 
   // Human label for a session option, e.g. "Tuesday 08:00–10:45 · 1г-СИИС · Барака 1"
@@ -217,15 +218,11 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
       if (list.length > 0) { setSessionIdx(0); applySlot(list[0]); }
     } else {
       // No professor yet → auto-fill day/time/room from the subject's first real
-      // session, adopting that session's teacher (the user can still change it).
+      // session. We intentionally leave the professor field EMPTY: it's a native
+      // <datalist>, which filters its options by the field's text, so pre-filling
+      // a name would hide every other professor/assistant for the subject.
       const list = subjectSlots.get(value) ?? [];
-      if (list.length > 0) {
-        const first = list[0];
-        const teacher = first.teachers.find(t => t.cyrillicName)?.cyrillicName ?? "";
-        if (teacher) setProfessor(teacher);
-        setSessionIdx(0);
-        applySlot(first);
-      }
+      if (list.length > 0) { setSessionIdx(0); applySlot(list[0]); }
     }
   }
 
