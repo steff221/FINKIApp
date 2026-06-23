@@ -139,6 +139,8 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
 
   // Suppresses the auto-end-time effect when we prefill start+end from a real slot
   const prefilling = useRef(false);
+  // True once the user manually changes the Тип, so we stop auto-syncing it
+  const typeTouched = useRef(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   useFocusTrap(dialogRef);
 
@@ -148,9 +150,9 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
     setStart(slot.startTime.substring(0, 5));
     setEnd(slot.endTime.substring(0, 5));
     if (slot.classroom?.name) setRoom(slot.classroom.name);
-    // NB: the lesson type is set once on subject-select; we deliberately do NOT
-    // re-set it here, so the user's manual Тип toggle is respected when they pick
-    // a professor or a different session.
+    // Follow the session's real lesson type (e.g. switch to auditory exercise),
+    // unless it's lab mode or the user has already overridden Тип by hand.
+    if (entryType !== "LAB" && !typeTouched.current) setEntryType(slot.subject.lessonType);
   }
 
   // Human label for a session option, e.g. "Tuesday 08:00–10:45 · 1г-СИИС · Барака 1"
@@ -202,6 +204,8 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
 
   function handleTitleChange(value: string) {
     setTitle(value);
+    // New subject → resume auto-syncing the Тип to the selected session's type
+    typeTouched.current = false;
     // If the typed value exactly matches a scraped subject, adopt its lesson type
     // but don't override explicit lab mode — user made a deliberate choice
     const matchedType = subjectTypeMap.get(value);
@@ -412,7 +416,7 @@ export default function AddEntryModal({ initial, prefill, defaultDay = 0, defaul
                   <span className="text-sm font-semibold text-emerald-700 flex-1">{LESSON_TYPE_LABELS.LAB}</span>
                 </div>
               ) : (
-                <select className={inputCls} value={entryType} onChange={e => setEntryType(e.target.value as "LECTURE" | "EXERCISE" | "COMBINED")}>
+                <select className={inputCls} value={entryType} onChange={e => { setEntryType(e.target.value as "LECTURE" | "EXERCISE" | "COMBINED"); typeTouched.current = true; }}>
                   <option value="LECTURE">{LESSON_TYPE_LABELS.LECTURE}</option>
                   <option value="EXERCISE">{LESSON_TYPE_LABELS.EXERCISE}</option>
                   <option value="COMBINED">{LESSON_TYPE_LABELS.COMBINED}</option>
