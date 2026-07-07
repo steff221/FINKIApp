@@ -128,14 +128,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         width: double.infinity,
                         child: FilledButton(
                           onPressed: auth.loading ? null : _submit,
-                          child: auth.loading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2.2, color: Colors.white),
-                                )
-                              : const Text('Најави се'),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 220),
+                            transitionBuilder: (child, anim) => FadeTransition(
+                              opacity: anim,
+                              child: ScaleTransition(scale: anim, child: child),
+                            ),
+                            child: auth.loading
+                                ? const SizedBox(
+                                    key: ValueKey('spinner'),
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2.2, color: Colors.white),
+                                  )
+                                : const Text('Најави се',
+                                    key: ValueKey('label')),
+                          ),
                         ),
                       ),
                     ],

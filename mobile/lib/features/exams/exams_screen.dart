@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/models.dart';
 import '../schedule/schedule_providers.dart';
 import 'exams_providers.dart';
+import '../../core/widgets/finki_loader.dart';
 
 const _mkMonthsLong = [
   'Јануари', 'Февруари', 'Март', 'Април', 'Мај', 'Јуни',
@@ -36,7 +37,7 @@ class _ExamsScreenState extends ConsumerState<ExamsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Испити')),
       body: sessionsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: FinkiLoader()),
         error: (e, _) => _centeredMessage('Не може да се вчитаат испитите'),
         data: (sessions) {
           if (sessions.isEmpty) {
@@ -106,7 +107,7 @@ class _ExamsScreenState extends ConsumerState<ExamsScreen> {
   Widget _examsList(String session) {
     final examsAsync = ref.watch(examsProvider(session));
     return examsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: FinkiLoader()),
       error: (e, _) => _centeredMessage('Грешка при вчитување'),
       data: (exams) {
         final q = _query.trim().toLowerCase();

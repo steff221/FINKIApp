@@ -7,6 +7,7 @@ import '../../core/theme/lesson_type.dart';
 import '../../models/models.dart';
 import '../timetable/timetable_providers.dart';
 import 'schedule_providers.dart';
+import '../../core/widgets/finki_loader.dart';
 
 const _mkMonthsShort = [
   'јан', 'фев', 'мар', 'апр', 'мај', 'јун',
@@ -204,7 +205,7 @@ class ScheduleScreen extends ConsumerWidget {
       AsyncValue<List<CustomEntry>> customAsync) {
     if (slotsAsync.isLoading || customAsync.isLoading) {
       return const Padding(
-          padding: EdgeInsets.only(top: 60), child: Center(child: CircularProgressIndicator()));
+          padding: EdgeInsets.only(top: 60), child: Center(child: FinkiLoader()));
     }
 
     final items = <_Item>[

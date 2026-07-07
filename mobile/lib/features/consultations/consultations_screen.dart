@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/models.dart';
 import 'consultations_providers.dart';
 import 'professor_detail_screen.dart';
+import '../../core/widgets/finki_loader.dart';
 
 class ConsultationsScreen extends ConsumerStatefulWidget {
   const ConsultationsScreen({super.key});
@@ -23,7 +24,7 @@ class _ConsultationsScreenState extends ConsumerState<ConsultationsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Консултации')),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: FinkiLoader()),
         error: (e, _) => _msg('Не може да се вчитаат консултациите'),
         data: (all) {
           final q = _query.trim().toLowerCase();

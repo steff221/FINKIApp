@@ -1,30 +1,29 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:finki_scheduler/main.dart';
+import 'package:finki_scheduler/models/models.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('TimetableFilters day-of-week filtering', () {
+    test('selecting a day adds it to the API query', () {
+      final filters = const TimetableFilters().copyWith(dayOfWeek: () => 2);
+      expect(filters.dayOfWeek, 2);
+      expect(filters.activeCount, 1);
+      expect(filters.toQuery()['dayOfWeek'], '2');
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('clearing the day removes it from the API query', () {
+      const selected = TimetableFilters(dayOfWeek: 4);
+      final cleared = selected.copyWith(dayOfWeek: () => null);
+      expect(cleared.dayOfWeek, isNull);
+      expect(cleared.isEmpty, isTrue);
+      expect(cleared.toQuery().containsKey('dayOfWeek'), isFalse);
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('clearing the day keeps other filters intact', () {
+      const filters = TimetableFilters(dayOfWeek: 1, year: 2);
+      final cleared = filters.copyWith(dayOfWeek: () => null);
+      expect(cleared.year, 2);
+      expect(cleared.activeCount, 1);
+    });
   });
 }

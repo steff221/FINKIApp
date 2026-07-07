@@ -18,7 +18,7 @@ class Subject {
   final int id;
   final String fullName;
   final String baseName;
-  final String lessonType; // LECTURE | LAB | EXERCISE | COMBINED
+  final String lessonType; // predavanje | lab | vežbi
 
   Subject({
     required this.id,
