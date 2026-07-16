@@ -22,6 +22,17 @@ public interface ConsultationSlotRepository extends JpaRepository<ConsultationSl
     @Query("DELETE FROM ConsultationSlot c WHERE c.teacher.id = :teacherId")
     void deleteByTeacherId(@Param("teacherId") Long teacherId);
 
+    /**
+     * Move all slots from one teacher to another. Used when a consultation-only
+     * teacher is merged into its matched EduPage teacher: the slots must be
+     * re-pointed before the orphan row is deleted, otherwise the teacher_id
+     * ON DELETE CASCADE would wipe the slots scraped in the same run.
+     */
+    @Modifying
+    @Query(value = "UPDATE consultation_slots SET teacher_id = :newTeacherId WHERE teacher_id = :oldTeacherId",
+           nativeQuery = true)
+    void reassignTeacher(@Param("oldTeacherId") Long oldTeacherId, @Param("newTeacherId") Long newTeacherId);
+
     @Query("""
         SELECT c FROM ConsultationSlot c
         JOIN FETCH c.teacher t

@@ -17,7 +17,7 @@ class TeacherMatcherTest {
         normalizer = new NameNormalizer();
         // TeacherMatcherService needs repos; we test only the similarity method directly
         // since it's public and repo-independent
-        matcher = new TeacherMatcherService(null, null, normalizer);
+        matcher = new TeacherMatcherService(null, null, null, normalizer);
     }
 
     @Test

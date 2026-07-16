@@ -2,6 +2,7 @@ package com.finki.scheduler.matching;
 
 import com.finki.scheduler.domain.Teacher;
 import com.finki.scheduler.domain.TeacherMatchOverride;
+import com.finki.scheduler.repository.ConsultationSlotRepository;
 import com.finki.scheduler.repository.TeacherMatchOverrideRepository;
 import com.finki.scheduler.repository.TeacherRepository;
 import com.finki.scheduler.service.matching.NameNormalizer;
@@ -30,12 +31,13 @@ class TeacherMatcherChainTest {
 
     @Mock private TeacherRepository teacherRepo;
     @Mock private TeacherMatchOverrideRepository overrideRepo;
+    @Mock private ConsultationSlotRepository consultationSlotRepo;
 
     private TeacherMatcherService matcher;
 
     @BeforeEach
     void setUp() {
-        matcher = new TeacherMatcherService(teacherRepo, overrideRepo, new NameNormalizer());
+        matcher = new TeacherMatcherService(teacherRepo, overrideRepo, consultationSlotRepo, new NameNormalizer());
         // Saves echo the argument back so assertions can inspect the merged row.
         lenient().when(teacherRepo.save(any(Teacher.class))).thenAnswer(inv -> inv.getArgument(0));
     }

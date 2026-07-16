@@ -1,6 +1,7 @@
 package com.finki.scheduler.service.matching;
 
 import com.finki.scheduler.domain.Teacher;
+import com.finki.scheduler.repository.ConsultationSlotRepository;
 import com.finki.scheduler.repository.TeacherMatchOverrideRepository;
 import com.finki.scheduler.repository.TeacherRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
@@ -34,6 +36,7 @@ public class TeacherMatcherService {
 
     private final TeacherRepository teacherRepo;
     private final TeacherMatchOverrideRepository overrideRepo;
+    private final ConsultationSlotRepository consultationSlotRepo;
     private final NameNormalizer normalizer;
 
     /** A consultation teacher with its name fields normalised once, up front. */
@@ -44,16 +47,27 @@ public class TeacherMatcherService {
         List<Teacher> edupageTeachers = teacherRepo.findUnmatchedEdupageTeachers();
         // Only consultation-only teachers (no edupageId) are safe to delete during merge.
         // Already-merged teachers have schedule_slot_teachers FK references and cannot be deleted.
-        List<Teacher> consultationTeachers = teacherRepo.findAll()
+        // Mutable pool: each consultation profile may be claimed by at most one
+        // EduPage teacher. Once matched (and its orphan row deleted in merge), it
+        // is removed here so a later teacher cannot reuse the same username and
+        // trip the UNIQUE constraint on consultation_username.
+        List<Teacher> consultationTeachers = new ArrayList<>(teacherRepo.findAll()
             .stream()
             .filter(t -> t.getConsultationUsername() != null && t.getEdupageId() == null)
-            .toList();
+            .toList());
 
         log.info("Matching {} EduPage teachers against {} consultation profiles",
             edupageTeachers.size(), consultationTeachers.size());
 
         for (Teacher ep : edupageTeachers) {
             tryMatch(ep, consultationTeachers);
+            // A consultation profile may be claimed by only one EduPage teacher.
+            // Once claimed, drop it from the pool so a later teacher cannot match the
+            // same username and trip the UNIQUE constraint on consultation_username.
+            String claimed = ep.getConsultationUsername();
+            if (claimed != null) {
+                consultationTeachers.removeIf(c -> claimed.equals(c.getConsultationUsername()));
+            }
         }
     }
 
@@ -115,6 +129,10 @@ public class TeacherMatcherService {
 
         // Delete the orphan row first to release the UNIQUE slot before saving the merged row
         if (!consultationTeacher.getId().equals(edupageTeacher.getId())) {
+            // Re-point this run's freshly-scraped slots onto the surviving EduPage
+            // row before deleting the orphan, otherwise the teacher_id ON DELETE
+            // CASCADE would wipe them and consultations would import as 0 slots.
+            consultationSlotRepo.reassignTeacher(consultationTeacher.getId(), edupageTeacher.getId());
             teacherRepo.delete(consultationTeacher);
             teacherRepo.flush();
         }
