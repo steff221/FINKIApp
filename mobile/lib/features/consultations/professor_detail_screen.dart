@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/back_arrow.dart';
 import '../../models/models.dart';
 import 'consultations_providers.dart';
+import '../../core/theme/app_shape.dart';
 
 const _mkMonthsShort = [
   'јан', 'фев', 'мар', 'апр', 'мај', 'јун',
@@ -32,12 +34,18 @@ class ProfessorDetailScreen extends ConsumerWidget {
       });
 
     return Scaffold(
-      appBar: AppBar(title: Text(data.teacher.displayName)),
+      // The bar's own chevron is the platform's, not ours — every other way
+      // back in the app is the same arrow, so this one is too.
+      appBar: AppBar(
+        title: Text(data.teacher.displayName),
+        automaticallyImplyLeading: false,
+        leading: const BackArrow(),
+      ),
       body: slots.isEmpty
           ? const Center(
               child: Text('Нема закажани термини', style: TextStyle(color: AppColors.muted)))
           : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
               itemCount: slots.length,
               itemBuilder: (context, i) => _SlotCard(
                 slot: slots[i],
@@ -99,7 +107,7 @@ class _SlotCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.control),
         border: Border(left: BorderSide(color: AppColors.navy.withValues(alpha: 0.7), width: 4)),
         boxShadow: const [BoxShadow(color: Color(0x12000000), blurRadius: 4, offset: Offset(0, 1))],
       ),
@@ -133,8 +141,8 @@ class _SlotCard extends ConsumerWidget {
                 ? OutlinedButton(
                     onPressed: () => ref.read(bookingsProvider.notifier).cancel(slot.id),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFB91C1C),
-                      side: const BorderSide(color: Color(0xFFFECACA)),
+                      foregroundColor: AppColors.dangerInk,
+                      side: const BorderSide(color: AppColors.dangerBorder),
                       visualDensity: VisualDensity.compact,
                     ),
                     child: const Text('Откажи'),

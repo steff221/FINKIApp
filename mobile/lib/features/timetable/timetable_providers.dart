@@ -1,6 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../models/models.dart';
+import '../schedule/schedule_providers.dart';
+
+/// Which kind of class the subject browser is showing.
+///
+/// Kept apart from [filtersProvider] because COMBINED (`п+ав`) classes belong
+/// under *both* Предавање and Аудиториски вежби — they are literally both — so
+/// the narrowing happens client-side rather than in the query.
+final browseTypeProvider = StateProvider<String>((ref) => 'LECTURE');
 
 /// Current filter selection (sent to GET /timetable/slots).
 final filtersProvider = StateProvider<TimetableFilters>((ref) => const TimetableFilters());
@@ -43,6 +51,12 @@ class SavedSlotsController extends StateNotifier<Set<int>> {
       } else {
         await ref.read(apiProvider).addSlot(slotId);
       }
+      // This notifier only holds ids; Мој Распоред and Дома render the full
+      // slot objects from their own provider, which the shell keeps alive for
+      // the life of the session. Without this it goes on showing the list it
+      // loaded when the tab was first opened, and a class just added looks
+      // like it was never saved.
+      ref.invalidate(scheduleSlotsProvider);
     } catch (_) {
       final reverted = {...state};
       wasSaved ? reverted.add(slotId) : reverted.remove(slotId);

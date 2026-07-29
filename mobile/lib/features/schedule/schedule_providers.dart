@@ -2,6 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 import '../../models/models.dart';
 
+/// How Мој Распоред is being read right now.
+///
+/// The grid is the default: the question the screen exists to answer is "what
+/// does my week look like", and that is a shape before it is a list.
+enum ScheduleView { calendar, list }
+
+final scheduleViewProvider =
+    StateProvider<ScheduleView>((ref) => ScheduleView.calendar);
+
 /// Saved timetable slots (full objects) for the weekly view.
 final scheduleSlotsProvider = FutureProvider.autoDispose<List<ScheduleSlot>>(
   (ref) => ref.read(apiProvider).getScheduleSlots(),

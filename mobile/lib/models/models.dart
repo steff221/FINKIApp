@@ -5,12 +5,21 @@ class AuthResponse {
   final int userId;
   final String email;
 
-  AuthResponse({required this.token, required this.userId, required this.email});
+  /// Null for accounts created before the name field existed.
+  final String? name;
+
+  AuthResponse({
+    required this.token,
+    required this.userId,
+    required this.email,
+    this.name,
+  });
 
   factory AuthResponse.fromJson(Map<String, dynamic> j) => AuthResponse(
         token: j['token'] as String,
         userId: (j['userId'] as num).toInt(),
         email: j['email'] as String,
+        name: j['name'] as String?,
       );
 }
 
@@ -377,3 +386,6 @@ const List<String> kDayNames = [
   'Четврток',
   'Петок',
 ];
+
+/// Short weekday labels, indexed by dayOfWeek (0=Mon … 4=Fri).
+const List<String> kDayShortNames = ['Пон', 'Вто', 'Сре', 'Чет', 'Пет'];

@@ -1,15 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/demo/demo.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/finki_ball.dart';
+import '../../core/widgets/page_background.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Pixar-opening splash, in three acts:
@@ -49,7 +51,14 @@ const _settleBounces = [
 const _collapseStart = 0.80; // letters → logo
 
 class SplashScreen extends ConsumerStatefulWidget {
-  const SplashScreen({super.key});
+  /// Called once the dive into the «O» has finished and the app underneath is
+  /// ready to be shown.
+  ///
+  /// The splash is painted *over* the app rather than routed to, so there is no
+  /// screen to navigate away from — whoever put it up takes it down.
+  final VoidCallback onDone;
+
+  const SplashScreen({super.key, required this.onDone});
 
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
@@ -65,22 +74,45 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.initState();
 
     _intro = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 3600));
+      vsync: this,
+      duration: const Duration(milliseconds: 3600),
+    );
     _zoom = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 550));
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    );
 
     _intro.forward().then((_) => _leaveWhenReady());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FlutterNativeSplash.remove();
+      _warmUp();
     });
+  }
+
+  /// Gets the cost of the first screen out of the way while the logo is still
+  /// playing: the background's image and marks, and — with no server to wait
+  /// on — the bundled snapshot the schedule is built from.
+  ///
+  /// Fire-and-forget on purpose. Anything not ready in time simply loads the
+  /// way it always did.
+  Future<void> _warmUp() async {
+    try {
+      if (mounted) await precachePageBackground(context);
+      if (kDemoMode) await ref.read(apiProvider).getScheduleSlots();
+    } catch (_) {
+      // A warm-up is an optimisation; failing it must never hold up the app.
+    }
   }
 
   Future<void> _leaveWhenReady() async {
     // Hold on the formed logo until the auth check resolves (max ~3 s).
-    for (var waited = 0;
-        waited < 3000 && ref.read(authControllerProvider).status == AuthStatus.unknown;
-        waited += 100) {
+    for (
+      var waited = 0;
+      waited < 3000 &&
+          ref.read(authControllerProvider).status == AuthStatus.unknown;
+      waited += 100
+    ) {
       await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
     }
@@ -88,8 +120,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
     await _zoom.forward().orCancel;
     if (!mounted) return;
-    final status = ref.read(authControllerProvider).status;
-    context.go(status == AuthStatus.authenticated ? '/timetable' : '/login');
+    widget.onDone();
   }
 
   @override
@@ -107,232 +138,249 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final d = t - land;
     if (d < 0 || d > width) return 0;
     final p = d / width;
-    return p < 0.3 ? math.sin(math.pi * p / 0.6) : math.sin(math.pi * (0.5 + (p - 0.3) / 1.4));
+    return p < 0.3
+        ? math.sin(math.pi * p / 0.6)
+        : math.sin(math.pi * (0.5 + (p - 0.3) / 1.4));
   }
 
   double _landTime(int i) => i == 0 ? _fallEnd : _fallEnd + i * _hopDur;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.navy,
-      body: Center(
-        child: AnimatedBuilder(
-          animation: Listenable.merge([_intro, _zoom]),
-          builder: (context, _) {
-            final t = _intro.value;
-            // Eased sub-progress for the collapse (act 2).
-            final collapse = t < _collapseStart
-                ? 0.0
-                : Curves.easeInOutCubic
-                    .transform((t - _collapseStart) / (1 - _collapseStart));
+    // The one dark page in the app: the clock and battery have to invert for
+    // it, and back again on the way out (every AppBar asks for dark icons).
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.navy,
+        body: Center(
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_intro, _zoom]),
+            builder: (context, _) {
+              final t = _intro.value;
+              // Eased sub-progress for the collapse (act 2).
+              final collapse = t < _collapseStart
+                  ? 0.0
+                  : Curves.easeInOutCubic.transform(
+                      (t - _collapseStart) / (1 - _collapseStart),
+                    );
 
-            // ── Act 1: ball position + squash & stretch ────────────────────
-            double bx, by;
-            double squash = 0; // >0 flattens, <0 stretches (airborne)
+              // ── Act 1: ball position + squash & stretch ────────────────────
+              double bx, by;
+              double squash = 0; // >0 flattens, <0 stretches (airborne)
 
-            if (t < _fallEnd) {
-              final s = t / _fallEnd;
-              bx = _letterX(0);
-              by = _letterH + (_stageH - 60 - _letterH) * (1 - s * s);
-              squash = -0.22 * s; // stretches as it speeds up
-            } else if (t < _hopsEnd) {
-              final hop = math.min(((t - _fallEnd) / _hopDur).floor(), 3);
-              final s = (t - _fallEnd - hop * _hopDur) / _hopDur;
-              bx = _letterX(hop) + (_letterX(hop + 1) - _letterX(hop)) * s;
-              final arcH = 44.0 - hop * 3;
-              by = _letterH + arcH * 4 * s * (1 - s);
-              // Stretch follows vertical speed: max at takeoff/landing,
-              // relaxed at the top of the arc.
-              squash = -0.20 * (1 - 4 * s * (1 - s)).abs();
-              for (var i = 0; i < 5; i++) {
-                squash = math.max(squash, 0.9 * _pulse(t, _landTime(i), 0.06));
-              }
-            } else {
-              bx = _letterX(4);
-              // The «И» crushes under the ball's weight: the ball rides the
-              // collapsing letter down instead of teleporting to the floor.
-              final crush = Curves.easeOutCubic
-                  .transform(((t - _hopsEnd) / _pancakeDur).clamp(0.0, 1.0));
-              double bounce = 0;
-              for (final b in _settleBounces) {
-                if (t >= b[0] && t < b[1]) {
-                  final p = (t - b[0]) / (b[1] - b[0]);
-                  bounce = b[2] * 4 * p * (1 - p);
+              if (t < _fallEnd) {
+                final s = t / _fallEnd;
+                bx = _letterX(0);
+                by = _letterH + (_stageH - 60 - _letterH) * (1 - s * s);
+                squash = -0.22 * s; // stretches as it speeds up
+              } else if (t < _hopsEnd) {
+                final hop = math.min(((t - _fallEnd) / _hopDur).floor(), 3);
+                final s = (t - _fallEnd - hop * _hopDur) / _hopDur;
+                bx = _letterX(hop) + (_letterX(hop + 1) - _letterX(hop)) * s;
+                final arcH = 44.0 - hop * 3;
+                by = _letterH + arcH * 4 * s * (1 - s);
+                // Stretch follows vertical speed: max at takeoff/landing,
+                // relaxed at the top of the arc.
+                squash = -0.20 * (1 - 4 * s * (1 - s)).abs();
+                for (var i = 0; i < 5; i++) {
+                  squash = math.max(
+                    squash,
+                    0.9 * _pulse(t, _landTime(i), 0.06),
+                  );
                 }
-                squash = math.max(squash, 0.8 * _pulse(t, b[1], 0.05));
+              } else {
+                bx = _letterX(4);
+                // The «И» crushes under the ball's weight: the ball rides the
+                // collapsing letter down instead of teleporting to the floor.
+                final crush = Curves.easeOutCubic.transform(
+                  ((t - _hopsEnd) / _pancakeDur).clamp(0.0, 1.0),
+                );
+                double bounce = 0;
+                for (final b in _settleBounces) {
+                  if (t >= b[0] && t < b[1]) {
+                    final p = (t - b[0]) / (b[1] - b[0]);
+                    bounce = b[2] * 4 * p * (1 - p);
+                  }
+                  squash = math.max(squash, 0.8 * _pulse(t, b[1], 0.05));
+                }
+                // The big touchdown squish that flattens the letter.
+                squash = math.max(squash, _pulse(t, _hopsEnd, 0.07));
+                by = _letterH * (1 - 0.95 * crush) + bounce;
               }
-              // The big touchdown squish that flattens the letter.
-              squash = math.max(squash, _pulse(t, _hopsEnd, 0.07));
-              by = _letterH * (1 - 0.95 * crush) + bounce;
-            }
 
-            // ── Act 2: glide into the logo's «O» ───────────────────────────
-            final ballR = _ballR + (_oRadius - _ballR) * collapse;
-            if (collapse > 0) {
-              bx = bx + (_oCenterX - bx) * collapse;
-              final targetBottom = _oCenterY - _oRadius;
-              by = by + (targetBottom - by) * collapse;
-              squash *= (1 - collapse);
-            }
-            final ballOpacity = collapse < 0.75
-                ? 1.0
-                : 1.0 - Curves.easeIn.transform((collapse - 0.75) / 0.25);
-            final logoOpacity = collapse < 0.6
-                ? 0.0
-                : Curves.easeOut.transform((collapse - 0.6) / 0.4);
+              // ── Act 2: glide into the logo's «O» ───────────────────────────
+              final ballR = _ballR + (_oRadius - _ballR) * collapse;
+              if (collapse > 0) {
+                bx = bx + (_oCenterX - bx) * collapse;
+                final targetBottom = _oCenterY - _oRadius;
+                by = by + (targetBottom - by) * collapse;
+                squash *= (1 - collapse);
+              }
+              final ballOpacity = collapse < 0.75
+                  ? 1.0
+                  : 1.0 - Curves.easeIn.transform((collapse - 0.75) / 0.25);
+              final logoOpacity = collapse < 0.6
+                  ? 0.0
+                  : Curves.easeOut.transform((collapse - 0.6) / 0.4);
 
-            // Title fades in while the ball settles, out as the word morphs.
-            final titleIn = ((t - 0.56) / 0.16).clamp(0.0, 1.0);
-            final titleOut = 1 - collapse;
-            final titleOpacity = titleIn * titleOut;
+              // Title fades in while the ball settles, out as the word morphs.
+              final titleIn = ((t - 0.56) / 0.16).clamp(0.0, 1.0);
+              final titleOut = 1 - collapse;
+              final titleOpacity = titleIn * titleOut;
 
-            // ── Act 3: zoom into the «O» ───────────────────────────────────
-            final z = Curves.easeInCubic.transform(_zoom.value);
-            final scale = 1 + 30 * z;
-            final fade = z < 0.8 ? 1.0 : 1 - (z - 0.8) / 0.2;
-            // Alignment of the «O» centre within the stage box.
-            final oAlign = Alignment(
-              (_oCenterX / _rowW) * 2 - 1,
-              ((_stageH - _oCenterY) / _stageH) * 2 - 1,
-            );
+              // ── Act 3: zoom into the «O» ───────────────────────────────────
+              final z = Curves.easeInCubic.transform(_zoom.value);
+              final scale = 1 + 30 * z;
+              final fade = z < 0.8 ? 1.0 : 1 - (z - 0.8) / 0.2;
+              // Alignment of the «O» centre within the stage box.
+              final oAlign = Alignment(
+                (_oCenterX / _rowW) * 2 - 1,
+                ((_stageH - _oCenterY) / _stageH) * 2 - 1,
+              );
 
-            // Ground shadow under the ball: wide and faint when the ball is
-            // high, tight and dark when it lands — and when the ball squishes
-            // it spreads sideways, so the shadow widens and deepens with it.
-            final ballHeight = (by - _letterH * 0.5).clamp(0.0, _stageH - 60);
-            final hf = 1 - (ballHeight / (_stageH - 60)); // 1 = grounded
-            final contact = squash.clamp(0.0, 1.0);
-            final shadowW = ballR * (3.4 - 1.6 * hf) * (1 + 0.5 * contact);
-            final shadowOpacity =
-                ((0.12 + 0.32 * hf) + 0.22 * contact) * (1 - collapse);
+              // Ground shadow under the ball: wide and faint when the ball is
+              // high, tight and dark when it lands — and when the ball squishes
+              // it spreads sideways, so the shadow widens and deepens with it.
+              final ballHeight = (by - _letterH * 0.5).clamp(0.0, _stageH - 60);
+              final hf = 1 - (ballHeight / (_stageH - 60)); // 1 = grounded
+              final contact = squash.clamp(0.0, 1.0);
+              final shadowW = ballR * (3.4 - 1.6 * hf) * (1 + 0.5 * contact);
+              final shadowOpacity =
+                  ((0.12 + 0.32 * hf) + 0.22 * contact) * (1 - collapse);
 
-            return Opacity(
-              opacity: fade,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Transform.scale(
-                    scale: scale,
-                    alignment: oAlign,
-                    child: SizedBox(
-                      width: _rowW,
-                      height: _stageH,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.bottomLeft,
-                        children: [
-                          // Ball's ground shadow, cast on the baseline.
-                          Positioned(
-                            left: bx - shadowW / 2,
-                            bottom: -7,
-                            child: Container(
-                              width: shadowW,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(999),
-                                color: Colors.black
-                                    .withValues(alpha: shadowOpacity),
-                              ),
-                            ),
-                          ),
-                          // Letters — collapse toward the centre in act 2.
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            child: Row(
-                              children: [
-                                for (var i = 0; i < 5; i++)
-                                  _letter(i, t, collapse),
-                              ],
-                            ),
-                          ),
-                          // The FINKI logo the word collapses into.
-                          if (logoOpacity > 0)
+              return Opacity(
+                opacity: fade,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Transform.scale(
+                      scale: scale,
+                      alignment: oAlign,
+                      child: SizedBox(
+                        width: _rowW,
+                        height: _stageH,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.bottomLeft,
+                          children: [
+                            // Ball's ground shadow, cast on the baseline.
                             Positioned(
-                              left: _logoLeft,
-                              bottom: 0,
-                              child: Opacity(
-                                opacity: logoOpacity,
-                                child: Image.asset(
-                                  'assets/finki_logo.png',
-                                  width: _logoSize,
-                                  height: _logoSize,
-                                ),
-                              ),
-                            ),
-                          // The ball.
-                          if (ballOpacity > 0)
-                            Positioned(
-                              left: bx - ballR,
-                              bottom: by,
-                              child: Opacity(
-                                opacity: ballOpacity,
-                                child: Transform(
-                                  alignment: Alignment.bottomCenter,
-                                  // squash > 0 flattens (wide + short);
-                                  // squash < 0 stretches (narrow + tall).
-                                  transform: Matrix4.diagonal3Values(
-                                      1 + 0.32 * contact +
-                                          0.7 * math.min(squash, 0.0),
-                                      1 - 0.38 * contact -
-                                          0.7 * math.min(squash, 0.0),
-                                      1),
-                                  child: FinkiBall(
-                                    radius: ballR,
-                                    // Drop shadow separates in the air and
-                                    // hugs the ball tight on contact.
-                                    shadows: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                            alpha: 0.20 + 0.14 * hf),
-                                        blurRadius: 5 + 11 * (1 - hf),
-                                        offset: Offset(0, 3 + 6 * (1 - hf)),
-                                      ),
-                                    ],
+                              left: bx - shadowW / 2,
+                              bottom: -7,
+                              child: Container(
+                                width: shadowW,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(999),
+                                  color: Colors.black.withValues(
+                                    alpha: shadowOpacity,
                                   ),
                                 ),
                               ),
                             ),
-                        ],
+                            // Letters — collapse toward the centre in act 2.
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              child: Row(
+                                children: [
+                                  for (var i = 0; i < 5; i++)
+                                    _letter(i, t, collapse),
+                                ],
+                              ),
+                            ),
+                            // The FINKI logo the word collapses into.
+                            if (logoOpacity > 0)
+                              Positioned(
+                                left: _logoLeft,
+                                bottom: 0,
+                                child: Opacity(
+                                  opacity: logoOpacity,
+                                  child: Image.asset(
+                                    'assets/finki_logo.png',
+                                    width: _logoSize,
+                                    height: _logoSize,
+                                  ),
+                                ),
+                              ),
+                            // The ball.
+                            if (ballOpacity > 0)
+                              Positioned(
+                                left: bx - ballR,
+                                bottom: by,
+                                child: Opacity(
+                                  opacity: ballOpacity,
+                                  child: Transform(
+                                    alignment: Alignment.bottomCenter,
+                                    // squash > 0 flattens (wide + short);
+                                    // squash < 0 stretches (narrow + tall).
+                                    transform: Matrix4.diagonal3Values(
+                                      1 +
+                                          0.32 * contact +
+                                          0.7 * math.min(squash, 0.0),
+                                      1 -
+                                          0.38 * contact -
+                                          0.7 * math.min(squash, 0.0),
+                                      1,
+                                    ),
+                                    child: FinkiBall(
+                                      radius: ballR,
+                                      // Drop shadow separates in the air and
+                                      // hugs the ball tight on contact.
+                                      shadows: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.20 + 0.14 * hf,
+                                          ),
+                                          blurRadius: 5 + 11 * (1 - hf),
+                                          offset: Offset(0, 3 + 6 * (1 - hf)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  // Title + subtitle live outside the zoomed stage and fade
-                  // away before the dive.
-                  if (_zoom.value == 0) ...[
-                    const SizedBox(height: 26),
-                    Opacity(
-                      opacity: titleOpacity,
-                      child: Transform.translate(
-                        offset: Offset(0, 14 * (1 - titleIn)),
-                        child: Text(
-                          'ФИНКИ Распоред',
-                          style: GoogleFonts.rubik(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
+                    // Title + subtitle live outside the zoomed stage and fade
+                    // away before the dive.
+                    if (_zoom.value == 0) ...[
+                      const SizedBox(height: 26),
+                      Opacity(
+                        opacity: titleOpacity,
+                        child: Transform.translate(
+                          offset: Offset(0, 14 * (1 - titleIn)),
+                          child: Text(
+                            'ФИНКИ Распоред',
+                            style: GoogleFonts.rubik(
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Opacity(
-                      opacity: titleOpacity * 0.8,
-                      child: Text(
-                        'Распоред за студенти на ФИНКИ',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 13.5,
+                      const SizedBox(height: 6),
+                      Opacity(
+                        opacity: titleOpacity * 0.8,
+                        child: Text(
+                          'Распоред за студенти на ФИНКИ',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 13.5,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -343,8 +391,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // eased over _pancakeDur so it collapses instead of snapping.
     double squash = 0.35 * _pulse(t, _landTime(i), 0.07);
     if (i == 4 && t >= _hopsEnd) {
-      final crush = Curves.easeOutCubic
-          .transform(((t - _hopsEnd) / _pancakeDur).clamp(0.0, 1.0));
+      final crush = Curves.easeOutCubic.transform(
+        ((t - _hopsEnd) / _pancakeDur).clamp(0.0, 1.0),
+      );
       squash = math.max(squash, 0.95 * crush);
     }
 

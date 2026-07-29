@@ -20,6 +20,10 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    /** Display name for the greeting. Null for accounts made before V7. */
+    @Column(length = 120)
+    private String name;
+
     /** Authorization role; drives the {@code ROLE_*} authority. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

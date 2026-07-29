@@ -5,5 +5,7 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
     @NotBlank String email,
-    @NotBlank @Size(min = 8, max = 100) String password
+    @NotBlank @Size(min = 8, max = 100) String password,
+    /** Display name for the greeting; optional so older clients keep working. */
+    @Size(max = 120) String name
 ) {}

@@ -18,7 +18,11 @@ dependencies:
   intl: ^0.19.0                   # Macedonian date/number formatting
   webview_flutter: ^4.9.0         # campus map WebView
   flutter_native_splash: ^2.4.3   # native launch screen (no white flash)
-
+  flutter_svg: ^2.0.10            # tintable SVG nav/action icons
+  lottie: ^3.5.1
+  shared_preferences: ^2.5.5
+  flutter_local_notifications: ^22.2.0
+  timezone: ^0.11.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -28,12 +32,31 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    # Bundled rather than fetched at runtime: the typography must not depend on
+    # campus wifi, and goldens must not depend on a font server.
+    - google_fonts/
     - assets/finki_logo.png
-    - assets/nav_schedule.png
-    - assets/nav_consultations.png
-    - assets/nav_exams.png
-    - assets/nav_myschedule.png
-    - assets/nav_map.png
+    - assets/images/
+    - assets/animations/
+    - assets/demo/
+    - assets/home.svg
+    - assets/mail.svg
+    - assets/password.svg
+    - assets/lecture.svg
+    - assets/excercice.svg
+    - assets/trash.svg
+    - assets/calendar-clock.svg
+    - assets/invite-alt.svg
+    - assets/test.svg
+    - assets/hand-wave.svg
+    - assets/limit-hand.svg
+    - assets/calendar-star.svg
+    - assets/map-marker.svg
+    - assets/settings-sliders.svg
+    - assets/swift.svg
+    - assets/postgre.svg
+    - assets/atom.svg
+    - assets/database-management.svg
 
 flutter_native_splash:
   color: "#00265C"
@@ -45,7 +68,7 @@ flutter_native_splash:
   web: false
 
 flutter_launcher_icons:
-  image_path: "assets/finki_logo.png"
+  image_path: "assets/app_icon.png"
   ios: true
   android: false
   remove_alpha_ios: true
