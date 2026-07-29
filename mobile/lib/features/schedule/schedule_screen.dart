@@ -29,9 +29,7 @@ class ScheduleScreen extends ConsumerWidget {
     final examsAsync = ref.watch(savedExamsProvider);
 
     return Scaffold(
-      floatingActionButton: _AddFab(
-        onAdd: (type) => _showAddSheet(context, ref, type),
-      ),
+      floatingActionButton: _AddFab(onAdd: (type) => _showAddSheet(context, ref, type)),
       body: Column(
         children: [
           const ScreenHeader(
@@ -76,7 +74,9 @@ class ScheduleScreen extends ConsumerWidget {
       builder: (_) => _AddEntrySheet(
         entryType: entryType,
         onSave: (data) async {
-          await ref.read(customEntriesProvider.notifier).add(
+          await ref
+              .read(customEntriesProvider.notifier)
+              .add(
                 title: data['title']!,
                 entryType: entryType,
                 dayOfWeek: int.parse(data['dayOfWeek']!),
@@ -90,11 +90,10 @@ class ScheduleScreen extends ConsumerWidget {
     );
   }
 
-
   // ── Pinned exams ──────────────────────────────────────────────────────────
   Widget _examsSection(BuildContext context, WidgetRef ref, AsyncValue<List<Exam>> async) {
     if (async.hasError) return _examsErrorRow(ref);
-    final exams = async.value ?? [];
+    final exams = async.valueOrNull ?? [];
     if (exams.isEmpty) return const SizedBox.shrink();
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
@@ -108,24 +107,34 @@ class ScheduleScreen extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-            child: Row(children: [
-              SvgPicture.asset('assets/test.svg',
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/test.svg',
                   width: 18,
                   height: 18,
-                  colorFilter:
-                      const ColorFilter.mode(AppColors.examAccent, BlendMode.srcIn)),
-              const SizedBox(width: 8),
-              const Text('Испити', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                    color: AppColors.examSurface, borderRadius: BorderRadius.circular(AppRadius.pill)),
-                child: Text('${exams.length}',
+                  colorFilter: const ColorFilter.mode(AppColors.examAccent, BlendMode.srcIn),
+                ),
+                const SizedBox(width: 8),
+                const Text('Испити', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.examSurface,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Text(
+                    '${exams.length}',
                     style: const TextStyle(
-                        color: AppColors.examAccent, fontSize: 11, fontWeight: FontWeight.w700)),
-              ),
-            ]),
+                      color: AppColors.examAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           ...exams.map((e) => _examRow(ref, e)),
           const SizedBox(height: 6),
@@ -143,18 +152,22 @@ class ScheduleScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.hairline),
       ),
-      child: Row(children: [
-        const Icon(Icons.cloud_off_rounded, size: 18, color: AppColors.faint),
-        const SizedBox(width: 10),
-        const Expanded(
-          child: Text('Не може да се вчитаат зачуваните испити',
-              style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
-        ),
-        TextButton(
-          onPressed: () => ref.read(savedExamsProvider.notifier).load(),
-          child: const Text('Обиди се повторно'),
-        ),
-      ]),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_off_rounded, size: 18, color: AppColors.faint),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Не може да се вчитаат зачуваните испити',
+              style: TextStyle(color: AppColors.muted, fontSize: 12.5),
+            ),
+          ),
+          TextButton(
+            onPressed: () => ref.read(savedExamsProvider.notifier).load(),
+            child: const Text('Обиди се повторно'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -167,10 +180,13 @@ class ScheduleScreen extends ConsumerWidget {
         border: AppColors.examAccent,
         margin: EdgeInsets.zero,
         facts: [
-          ExamFact(SubjectIcons.date, formatMkDate(e.date, longMonth: false)),
+          ExamFact(
+            SubjectIcons.date,
+            formatMkDate(e.date, longMonth: false),
+            asset: SubjectIcons.dateAsset,
+          ),
           if (time != null) ExamFact(SubjectIcons.time, time, strong: true),
-          if (e.rooms != null && e.rooms!.isNotEmpty)
-            ExamFact(SubjectIcons.room, e.rooms!),
+          if (e.rooms != null && e.rooms!.isNotEmpty) ExamFact(SubjectIcons.room, e.rooms!),
         ],
         trailing: CardDeleteButton(
           onTap: () {
@@ -181,7 +197,6 @@ class ScheduleScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 /// Grid or list — the same week, read two ways.
@@ -203,16 +218,20 @@ class _ViewToggle extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          _option(ref, view, ScheduleView.calendar, Icons.calendar_view_week_rounded,
-              'Календар'),
+          _option(ref, view, ScheduleView.calendar, Icons.calendar_view_week_rounded, 'Календар'),
           _option(ref, view, ScheduleView.list, Icons.view_agenda_outlined, 'Список'),
         ],
       ),
     );
   }
 
-  Widget _option(WidgetRef ref, ScheduleView current, ScheduleView value,
-      IconData icon, String label) {
+  Widget _option(
+    WidgetRef ref,
+    ScheduleView current,
+    ScheduleView value,
+    IconData icon,
+    String label,
+  ) {
     final selected = current == value;
     return Expanded(
       child: GestureDetector(
@@ -230,17 +249,13 @@ class _ViewToggle extends ConsumerWidget {
             color: selected ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadius.chip),
             boxShadow: selected
-                ? const [
-                    BoxShadow(
-                        color: Color(0x14000000), blurRadius: 3, offset: Offset(0, 1))
-                  ]
+                ? const [BoxShadow(color: Color(0x14000000), blurRadius: 3, offset: Offset(0, 1))]
                 : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon,
-                  size: 15, color: selected ? AppColors.navy : AppColors.muted),
+              Icon(icon, size: 15, color: selected ? AppColors.navy : AppColors.muted),
               const SizedBox(width: 6),
               Text(
                 label,
@@ -336,9 +351,14 @@ class _AddFabState extends State<_AddFab> with SingleTickerProviderStateMixin {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.pill),
-            boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 2))],
+            boxShadow: const [
+              BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 2)),
+            ],
           ),
-          child: Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: color)),
+          child: Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: color),
+          ),
         ),
         const SizedBox(width: 10),
         FloatingActionButton.small(
@@ -382,10 +402,8 @@ class _AddEntrySheetState extends ConsumerState<_AddEntrySheet> {
     final picked = await showTimePicker(
       context: context,
       initialTime: isStart ? _start : _end,
-      builder: (ctx, child) => MediaQuery(
-        data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
-      ),
+      builder: (ctx, child) =>
+          MediaQuery(data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true), child: child!),
     );
     if (picked != null) setState(() => isStart ? _start = picked : _end = picked);
   }
@@ -449,14 +467,20 @@ class _AddEntrySheetState extends ConsumerState<_AddEntrySheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: AppColors.hairline,
-                    borderRadius: BorderRadius.circular(AppRadius.grabber)),
+                  color: AppColors.hairline,
+                  borderRadius: BorderRadius.circular(AppRadius.grabber),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            Text('Додај ${lessonTypeLabel(widget.entryType)}',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.navy)),
+            Text(
+              'Додај ${lessonTypeLabel(widget.entryType)}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                color: AppColors.navy,
+              ),
+            ),
             const SizedBox(height: 18),
             LabeledField(
               label: 'Предмет *',
@@ -475,37 +499,43 @@ class _AddEntrySheetState extends ConsumerState<_AddEntrySheet> {
               onChanged: (v) => setState(() => _day = v ?? _day),
             ),
             const SizedBox(height: 14),
-            Row(children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () => _pickTime(true),
-                  borderRadius: BorderRadius.circular(AppRadius.control),
-                  child: LabeledField(
-                    label: 'Почеток',
-                    child: InputDecorator(
-                      decoration: const InputDecoration(),
-                      child: Text(_fmt(_start),
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _pickTime(true),
+                    borderRadius: BorderRadius.circular(AppRadius.control),
+                    child: LabeledField(
+                      label: 'Почеток',
+                      child: InputDecorator(
+                        decoration: const InputDecoration(),
+                        child: Text(
+                          _fmt(_start),
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: InkWell(
-                  onTap: () => _pickTime(false),
-                  borderRadius: BorderRadius.circular(AppRadius.control),
-                  child: LabeledField(
-                    label: 'Крај',
-                    child: InputDecorator(
-                      decoration: const InputDecoration(),
-                      child: Text(_fmt(_end),
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _pickTime(false),
+                    borderRadius: BorderRadius.circular(AppRadius.control),
+                    child: LabeledField(
+                      label: 'Крај',
+                      child: InputDecorator(
+                        decoration: const InputDecoration(),
+                        child: Text(
+                          _fmt(_end),
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ]),
+              ],
+            ),
             const SizedBox(height: 14),
             LabeledField(
               label: 'Просторија (опционално)',
@@ -517,8 +547,7 @@ class _AddEntrySheetState extends ConsumerState<_AddEntrySheet> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 10),
-              Text(_error!,
-                  style: const TextStyle(color: AppColors.dangerInk, fontSize: 13)),
+              Text(_error!, style: const TextStyle(color: AppColors.dangerInk, fontSize: 13)),
             ],
             const SizedBox(height: 20),
             SizedBox(
@@ -529,7 +558,8 @@ class _AddEntrySheetState extends ConsumerState<_AddEntrySheet> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
+                        child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                      )
                     : const Text('Зачувај'),
               ),
             ),

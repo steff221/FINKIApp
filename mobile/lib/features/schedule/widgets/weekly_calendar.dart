@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../core/theme/app_art.dart';
@@ -10,6 +11,7 @@ import '../../../core/theme/lesson_type.dart';
 import '../../../core/utils/find_room.dart';
 import '../../../core/widgets/finki_loader.dart';
 import '../../../core/widgets/state_views.dart';
+import '../../../core/widgets/subject_card.dart';
 import '../../../models/models.dart';
 import '../schedule_providers.dart';
 import 'agenda_item.dart';
@@ -54,8 +56,7 @@ class _WeeklyCalendarState extends ConsumerState<WeeklyCalendar> {
   /// The Monday of the week being shown, so the strip can carry real dates.
   static DateTime _mondayOfThisWeek() {
     final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: now.weekday - 1));
+    return DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
   }
 
   @override
@@ -82,9 +83,10 @@ class _WeeklyCalendarState extends ConsumerState<WeeklyCalendar> {
       );
     }
 
-    final all = buildAgendaItems(slotsAsync.value ?? [], customAsync.value ?? [])
-        .where((i) => i.dayOfWeek >= 0 && i.dayOfWeek <= 4)
-        .toList();
+    final all = buildAgendaItems(
+      slotsAsync.valueOrNull ?? [],
+      customAsync.valueOrNull ?? [],
+    ).where((i) => i.dayOfWeek >= 0 && i.dayOfWeek <= 4).toList();
 
     if (all.isEmpty) {
       return const EmptyStateView(
@@ -226,11 +228,7 @@ class _DayTimeline extends StatelessWidget {
   final Map<AgendaItem, List<ClassConflict>> conflicts;
   final bool isToday;
 
-  const _DayTimeline({
-    required this.items,
-    required this.conflicts,
-    required this.isToday,
-  });
+  const _DayTimeline({required this.items, required this.conflicts, required this.isToday});
 
   @override
   Widget build(BuildContext context) {
@@ -257,14 +255,12 @@ class _DayTimeline extends StatelessWidget {
                 Positioned(
                   left: _gutterWidth + placed.left,
                   width: placed.width,
-                  top: (agendaMinutes(placed.item.start) - startHour * 60) /
-                      60 *
-                      _hourHeight,
-                  height: ((agendaMinutes(placed.item.end) -
-                              agendaMinutes(placed.item.start)) /
-                          60 *
-                          _hourHeight)
-                      .clamp(26.0, double.infinity),
+                  top: (agendaMinutes(placed.item.start) - startHour * 60) / 60 * _hourHeight,
+                  height:
+                      ((agendaMinutes(placed.item.end) - agendaMinutes(placed.item.start)) /
+                              60 *
+                              _hourHeight)
+                          .clamp(26.0, double.infinity),
                   child: _ClassBlock(
                     item: placed.item,
                     clashes: (conflicts[placed.item] ?? const []).isNotEmpty,
@@ -345,11 +341,7 @@ class _FreeDay extends StatelessWidget {
           const SizedBox(height: 4),
           const Text(
             'Слободен ден',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.muted,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.muted),
           ),
         ],
       ),
@@ -390,9 +382,7 @@ class _HourLines extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Expanded(
-                  child: Divider(height: 1, thickness: 1, color: AppColors.border),
-                ),
+                const Expanded(child: Divider(height: 1, thickness: 1, color: AppColors.border)),
               ],
             ),
           ),
@@ -412,12 +402,11 @@ class _NowLine extends StatelessWidget {
         Container(
           width: 9,
           height: 9,
-          decoration: const BoxDecoration(
-            color: AppColors.danger,
-            shape: BoxShape.circle,
-          ),
+          decoration: const BoxDecoration(color: AppColors.danger, shape: BoxShape.circle),
         ),
-        const Expanded(child: ColoredBox(color: AppColors.danger, child: SizedBox(height: 1.5))),
+        const Expanded(
+          child: ColoredBox(color: AppColors.danger, child: SizedBox(height: 1.5)),
+        ),
       ],
     );
   }
@@ -431,11 +420,7 @@ class _ClassBlock extends StatelessWidget {
   /// True when the block is sharing the lane, and so has to say less.
   final bool narrow;
 
-  const _ClassBlock({
-    required this.item,
-    required this.clashes,
-    required this.narrow,
-  });
+  const _ClassBlock({required this.item, required this.clashes, required this.narrow});
 
   @override
   Widget build(BuildContext context) {
@@ -487,7 +472,7 @@ class _ClassBlock extends StatelessWidget {
                         narrow
                             ? item.start
                             : '${item.start} – ${item.end}'
-                                '${item.room != null && item.room!.isNotEmpty ? ' · ${item.room}' : ''}',
+                                  '${item.room != null && item.room!.isNotEmpty ? ' · ${item.room}' : ''}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -544,21 +529,19 @@ void showClassDetails(BuildContext context, AgendaItem item) {
               spacing: 8,
               runSpacing: 8,
               children: [
+                _Fact(SubjectIcons.time, '${item.start} – ${item.end}', bg: AppColors.panel),
                 _Fact(
-                  Icons.schedule_rounded,
-                  '${item.start} – ${item.end}',
-                  bg: AppColors.panel,
-                ),
-                _Fact(
-                  Icons.event_outlined,
+                  SubjectIcons.date,
                   kDayNames[item.dayOfWeek],
                   bg: AppColors.panel,
+                  asset: SubjectIcons.dateAsset,
                 ),
                 _Fact(
-                  Icons.label_outline_rounded,
+                  SubjectIcons.type,
                   lessonTypeLabel(item.type),
                   bg: style.pillBg,
                   fg: style.pillFg,
+                  asset: lessonTypeIconAsset(item.type),
                 ),
               ],
             ),
@@ -566,12 +549,13 @@ void showClassDetails(BuildContext context, AgendaItem item) {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  const Icon(Icons.person_outline_rounded,
-                      size: 16, color: AppColors.faint),
+                  const Icon(Icons.person_outline_rounded, size: 16, color: AppColors.faint),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(item.professor!,
-                        style: const TextStyle(fontSize: 13.5, color: AppColors.ink)),
+                    child: Text(
+                      item.professor!,
+                      style: const TextStyle(fontSize: 13.5, color: AppColors.ink),
+                    ),
                   ),
                 ],
               ),
@@ -603,21 +587,30 @@ class _Fact extends StatelessWidget {
   final Color bg;
   final Color? fg;
 
-  const _Fact(this.icon, this.text, {required this.bg, this.fg});
+  /// A bundled SVG to use instead of [icon], tinted to the chip's own colour —
+  /// same arrangement as [SubjectMeta] on the cards.
+  final String? asset;
+
+  const _Fact(this.icon, this.text, {required this.bg, this.fg, this.asset});
 
   @override
   Widget build(BuildContext context) {
     final color = fg ?? AppColors.ink;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppRadius.chip),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.chip)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          if (asset != null)
+            SvgPicture.asset(
+              asset!,
+              width: 14,
+              height: 14,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            )
+          else
+            Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
           Text(
             text,

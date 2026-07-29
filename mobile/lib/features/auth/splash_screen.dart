@@ -355,11 +355,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           offset: Offset(0, 14 * (1 - titleIn)),
                           child: Text(
                             'ФИНКИ Распоред',
-                            style: GoogleFonts.rubik(
+                            style: GoogleFonts.playfairDisplay(
                               color: Colors.white,
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.2,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
                             ),
                           ),
                         ),
@@ -417,9 +417,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               child: Text(
                 _letters[i],
                 textAlign: TextAlign.center,
-                style: GoogleFonts.rubik(
-                  fontSize: 44,
-                  fontWeight: FontWeight.w900,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 46,
+                  fontWeight: FontWeight.w700,
+                  // Playfair sets a taller default line box than Rubik did, and
+                  // the letter cells are a fixed 42×54 — pin it so the glyph
+                  // keeps its footing in the cell instead of being clipped.
+                  height: 1.05,
                   color: Colors.white,
                   shadows: [
                     const Shadow(

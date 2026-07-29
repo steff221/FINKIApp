@@ -99,11 +99,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // is where the reminders are kept in step with it. `sync` compares against
     // what it last scheduled, so calling it on every build costs nothing.
     if (slotsAsync.hasValue && customAsync.hasValue) {
-      unawaited(ref.read(remindersProvider.notifier).sync(
-            slots: slotsAsync.value ?? const [],
-            entries: customAsync.value ?? const [],
-            exams: ref.read(savedExamsProvider).value ?? const [],
-          ));
+      unawaited(
+        ref
+            .read(remindersProvider.notifier)
+            .sync(
+              slots: slotsAsync.valueOrNull ?? const [],
+              entries: customAsync.valueOrNull ?? const [],
+              exams: ref.read(savedExamsProvider).valueOrNull ?? const [],
+            ),
+      );
     }
     // Only the first load leaves the hero with nothing to say; a refetch keeps
     // the card it already has rather than falling back to a spinner.
@@ -112,7 +116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final next = (hasError || isLoading)
         ? null
         : _resolveNextClass(
-            buildAgendaItems(slotsAsync.value ?? [], customAsync.value ?? []),
+            buildAgendaItems(slotsAsync.valueOrNull ?? [], customAsync.valueOrNull ?? []),
             _now,
           );
 
@@ -166,11 +170,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onPressed: () => context.push('/schedule'),
           child: const Text(
             'Мој Распоред',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.navy,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.navy),
           ),
         ),
         const ProfileMenu(),
@@ -190,8 +190,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     Flexible(
                       child: Text(
-                        mkGreeting(_now,
-                            name: ref.watch(authControllerProvider).name),
+                        mkGreeting(_now, name: ref.watch(authControllerProvider).name),
                         style: AppType.greeting,
                       ),
                     ),
@@ -202,10 +201,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       'assets/hand-wave.svg',
                       width: 21,
                       height: 21,
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.navy,
-                        BlendMode.srcIn,
-                      ),
+                      colorFilter: const ColorFilter.mode(AppColors.navy, BlendMode.srcIn),
                     ),
                   ],
                 ),
@@ -220,7 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// A compact strip for the soonest exam pinned on Мој Распоред, so Дома shows
   /// both classes and exams. Renders nothing when none are pinned or upcoming.
   Widget _nextExam() {
-    final exams = ref.watch(savedExamsProvider).value ?? [];
+    final exams = ref.watch(savedExamsProvider).valueOrNull ?? [];
     final today = todayIso();
     final upcoming = exams.where((e) => e.date.compareTo(today) >= 0).toList()
       ..sort((a, b) => a.date.compareTo(b.date));
@@ -253,7 +249,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             border: AppColors.examAccent,
             margin: EdgeInsets.zero,
             facts: [
-              ExamFact(SubjectIcons.date, formatMkDate(exam.date, longMonth: false)),
+              ExamFact(
+                SubjectIcons.date,
+                formatMkDate(exam.date, longMonth: false),
+                asset: SubjectIcons.dateAsset,
+              ),
               if (time != null) ExamFact(SubjectIcons.time, time, strong: true),
               if (exam.rooms != null && exam.rooms!.isNotEmpty)
                 ExamFact(SubjectIcons.room, exam.rooms!),
@@ -317,12 +317,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 if (!upcoming)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: Lottie.asset(
-                      AppArt.restingDog,
-                      width: 84,
-                      height: 84,
-                      repeat: true,
-                    ),
+                    child: Lottie.asset(AppArt.restingDog, width: 84, height: 84, repeat: true),
                   ),
               ],
             ),
@@ -357,8 +352,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (room != null && room.isNotEmpty) ...[
           const SizedBox(height: 4),
           SubjectMetaRow(
-            SubjectMeta(SubjectIcons.room, room,
-                onTap: () => findRoomOnMap(context, room)),
+            SubjectMeta(SubjectIcons.room, room, onTap: () => findRoomOnMap(context, room)),
           ),
         ],
       ],
@@ -398,9 +392,7 @@ _NextClass? _resolveNextClass(List<AgendaItem> items, DateTime now) {
 
   AgendaItem? earliestOn(int day, {int after = -1}) {
     final list =
-        onWeekdays
-            .where((i) => i.dayOfWeek == day && agendaMinutes(i.start) > after)
-            .toList()
+        onWeekdays.where((i) => i.dayOfWeek == day && agendaMinutes(i.start) > after).toList()
           ..sort((a, b) => agendaMinutes(a.start).compareTo(agendaMinutes(b.start)));
     return list.isEmpty ? null : list.first;
   }

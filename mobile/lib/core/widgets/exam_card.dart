@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_shape.dart';
@@ -13,7 +14,11 @@ class ExamFact {
   final String text;
   final bool strong;
 
-  const ExamFact(this.icon, this.text, {this.strong = false});
+  /// A bundled SVG to use instead of [icon] — the same override [SubjectMeta]
+  /// takes, so a fact reads identically on a class card and an exam card.
+  final String? asset;
+
+  const ExamFact(this.icon, this.text, {this.strong = false, this.asset});
 }
 
 /// One exam: the subject, a line of facts, and whatever the faculty added as a
@@ -60,12 +65,7 @@ class ExamCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppType.cardTitle,
-                ),
+                Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppType.cardTitle),
                 if (facts.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   // Wraps rather than truncating: a long room list is worth a
@@ -107,7 +107,15 @@ class _Fact extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(fact.icon, size: 14, color: AppColors.faint),
+        if (fact.asset != null)
+          SvgPicture.asset(
+            fact.asset!,
+            width: 14,
+            height: 14,
+            colorFilter: const ColorFilter.mode(AppColors.faint, BlendMode.srcIn),
+          )
+        else
+          Icon(fact.icon, size: 14, color: AppColors.faint),
         const SizedBox(width: 5),
         Text(
           fact.text,

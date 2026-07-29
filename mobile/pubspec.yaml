@@ -44,6 +44,7 @@ flutter:
     - assets/password.svg
     - assets/lecture.svg
     - assets/excercice.svg
+    - assets/code-fork.svg
     - assets/trash.svg
     - assets/calendar-clock.svg
     - assets/invite-alt.svg

@@ -26,6 +26,11 @@ class SubjectMeta {
 /// time and a pin always means a room.
 abstract final class SubjectIcons {
   static const date = Icons.calendar_month_outlined;
+
+  /// The bundled calendar, for the rows that can carry an SVG. Same meaning as
+  /// [date] — a day or a date — drawn in the app's own icon set so a card's
+  /// glyphs come from one hand rather than half Material, half ours.
+  static const dateAsset = 'assets/calendar-star.svg';
   static const time = Icons.schedule_rounded;
   static const room = Icons.place_outlined;
   static const teacher = Icons.person_outline_rounded;
@@ -114,10 +119,7 @@ class SubjectCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (lead != null) ...[
-                    _Gutter(lead!),
-                    const SizedBox(width: 14),
-                  ],
+                  if (lead != null) ...[_Gutter(lead!), const SizedBox(width: 14)],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,9 +246,7 @@ class SubjectMetaRow extends StatelessWidget {
           Icon(meta.icon, size: 14, color: AppColors.faint),
         const SizedBox(width: 6),
         Flexible(
-          child: meta.onTap == null
-              ? label
-              : GestureDetector(onTap: meta.onTap, child: label),
+          child: meta.onTap == null ? label : GestureDetector(onTap: meta.onTap, child: label),
         ),
       ],
     );

@@ -52,12 +52,12 @@ class CustomEntriesController extends StateNotifier<AsyncValue<List<CustomEntry>
           room: room,
           professor: professor,
         );
-    final current = state.value ?? [];
+    final current = state.valueOrNull ?? [];
     state = AsyncValue.data([...current, created]);
   }
 
   Future<void> delete(int id) async {
-    final current = state.value ?? [];
+    final current = state.valueOrNull ?? [];
     state = AsyncValue.data(current.where((e) => e.id != id).toList());
     try {
       await ref.read(apiProvider).deleteCustomEntry(id);
@@ -88,7 +88,7 @@ class SavedExamsController extends StateNotifier<AsyncValue<List<Exam>>> {
   }
 
   Future<void> add(Exam exam) async {
-    final current = state.value ?? [];
+    final current = state.valueOrNull ?? [];
     if (current.any((e) => e.id == exam.id)) return;
     state = AsyncValue.data([...current, exam]); // optimistic
     try {
@@ -99,7 +99,7 @@ class SavedExamsController extends StateNotifier<AsyncValue<List<Exam>>> {
   }
 
   Future<void> remove(int examId) async {
-    final current = state.value ?? [];
+    final current = state.valueOrNull ?? [];
     state = AsyncValue.data(current.where((e) => e.id != examId).toList()); // optimistic
     try {
       await ref.read(apiProvider).removeSavedExam(examId);
@@ -111,7 +111,7 @@ class SavedExamsController extends StateNotifier<AsyncValue<List<Exam>>> {
 
 /// Set of pinned exam ids — for the +/✓ toggle on the Испити screen.
 final savedExamIdsProvider = Provider.autoDispose<Set<int>>((ref) {
-  final exams = ref.watch(savedExamsProvider).value ?? [];
+  final exams = ref.watch(savedExamsProvider).valueOrNull ?? [];
   return exams.map((e) => e.id).toSet();
 });
 

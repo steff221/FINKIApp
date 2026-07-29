@@ -45,7 +45,7 @@ class WeeklyAgenda extends ConsumerWidget {
           padding: EdgeInsets.only(top: 60), child: Center(child: FinkiLoader()));
     }
 
-    final items = buildAgendaItems(slotsAsync.value ?? [], customAsync.value ?? []);
+    final items = buildAgendaItems(slotsAsync.valueOrNull ?? [], customAsync.valueOrNull ?? []);
 
     if (items.isEmpty) {
       return const EmptyStateView(

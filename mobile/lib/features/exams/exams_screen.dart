@@ -51,7 +51,7 @@ class _ExamsScreenState extends ConsumerState<ExamsScreen> {
   Widget build(BuildContext context) {
     final sessionsAsync = ref.watch(examSessionsProvider);
 
-    final sessions = sessionsAsync.value ?? const <String>[];
+    final sessions = sessionsAsync.valueOrNull ?? const <String>[];
     final selected =
         sessions.isEmpty ? null : (ref.watch(selectedSessionProvider) ?? sessions.first);
     final loaded = selected == null ? null : ref.watch(examsProvider(selected)).value;

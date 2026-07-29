@@ -51,7 +51,7 @@ const Map<String, String> kLessonTypeLabels = {
 String lessonTypeLabel(String type) => kLessonTypeLabels[type] ?? type;
 
 /// Glyph for a lesson type's meta row: a lectern for Предавање, a pen for the
-/// exercise classes.
+/// exercise classes, and two joined branches for the ones that are both.
 ///
 /// Returns null for types with no dedicated icon — callers fall back to the
 /// generic tag glyph.
@@ -62,6 +62,8 @@ String? lessonTypeIconAsset(String type) {
     case 'EXERCISE':
     case 'LAB':
       return 'assets/excercice.svg';
+    case 'COMBINED':
+      return 'assets/code-fork.svg';
     default:
       return null;
   }
