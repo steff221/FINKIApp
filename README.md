@@ -1,8 +1,3 @@
-
-
-
-
-
 # ФИНКИ Распоред · FINKI Schedule
 
 A web and mobile app for FINKI students to view their class timetable, browse professor consultations, build a personal weekly schedule, track exams, and find rooms on a campus map.
@@ -18,6 +13,12 @@ A web and mobile app for FINKI students to view their class timetable, browse pr
 
 A short walkthrough — browse the faculty timetable, build a personal weekly schedule, check professor consultations and exams, and find rooms on the campus map.
 
+<video controls width="100%" playsinline>
+  <source src="photos/screen-recording.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
+If the video does not play in GitHub’s README viewer, [download the screen recording](photos/screen-recording.mp4).
 
 ---
 
