@@ -13,6 +13,14 @@ public interface ConsultationBookingRepository extends JpaRepository<Consultatio
 
     long countBySlotId(Long slotId);
 
+    /**
+     * Booking totals for every slot that has at least one, as {slotId, count}
+     * rows. Plain JPQL tuples rather than a projection interface: this is read
+     * once per consultations request and mapped straight into a Map.
+     */
+    @Query("SELECT b.slot.id, COUNT(b) FROM ConsultationBooking b GROUP BY b.slot.id")
+    List<Object[]> countBookingsPerSlot();
+
     boolean existsBySlotIdAndUserId(Long slotId, Long userId);
 
     Optional<ConsultationBooking> findBySlotIdAndUserId(Long slotId, Long userId);

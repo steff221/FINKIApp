@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,12 +23,23 @@ public class ConsultationService {
     private final ConsultationSlotRepository slotRepo;
     private final ConsultationBookingRepository bookingRepo;
 
+    /**
+     * Every teacher with their slots, teachers without any included.
+     *
+     * <p>Two queries regardless of faculty size: the roster, and every slot with
+     * its teacher fetched alongside. It used to be one query per teacher, which
+     * on a ~100-professor roster meant ~100 round trips for the screen students
+     * open first.
+     */
     public Map<Teacher, List<ConsultationSlot>> getAllGrouped() {
-        List<Teacher> teachers = teacherRepo.findAll();
-        return teachers.stream().collect(Collectors.toMap(
-            t -> t,
-            t -> slotRepo.findByTeacherIdOrderByDateAscStartTimeAsc(t.getId())
-        ));
+        Map<Long, List<ConsultationSlot>> byTeacherId = slotRepo.findAllWithTeacher().stream()
+            .collect(Collectors.groupingBy(slot -> slot.getTeacher().getId()));
+
+        Map<Teacher, List<ConsultationSlot>> grouped = new LinkedHashMap<>();
+        for (Teacher teacher : teacherRepo.findAll()) {
+            grouped.put(teacher, byTeacherId.getOrDefault(teacher.getId(), List.of()));
+        }
+        return grouped;
     }
 
     public List<ConsultationSlot> getSlotsForTeacher(Long teacherId) {
@@ -43,6 +55,24 @@ public class ConsultationService {
     public List<ConsultationSlot> search(String query) {
         if (query == null || query.isBlank()) return slotRepo.findAll();
         return slotRepo.searchByTeacherName(query.trim());
+    }
+
+    /**
+     * How many students have booked each slot, keyed by slot id, in one query.
+     * A slot nobody has booked is absent from the map — callers should read it
+     * through {@link #bookingCountOf}.
+     */
+    public Map<Long, Long> bookingCounts() {
+        return bookingRepo.countBookingsPerSlot().stream()
+            .collect(Collectors.toMap(
+                row -> ((Number) row[0]).longValue(),
+                row -> ((Number) row[1]).longValue()));
+    }
+
+    /** Reads {@link #bookingCounts()} the safe way: an unbooked slot counts zero. */
+    public static long bookingCountOf(Map<Long, Long> counts, Long slotId) {
+        Long count = counts.get(slotId);
+        return count == null ? 0L : count;
     }
 
     public long countBookings(Long slotId) {

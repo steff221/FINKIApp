@@ -18,6 +18,17 @@ public interface ConsultationSlotRepository extends JpaRepository<ConsultationSl
         """)
     List<ConsultationSlot> findByTeacherIdOrderByDateAscStartTimeAsc(@Param("teacherId") Long teacherId);
 
+    /**
+     * Every slot with its teacher already attached, so the consultations list can
+     * be assembled from one query instead of one per teacher.
+     */
+    @Query("""
+        SELECT c FROM ConsultationSlot c
+        JOIN FETCH c.teacher t
+        ORDER BY c.date ASC, c.startTime ASC
+        """)
+    List<ConsultationSlot> findAllWithTeacher();
+
     @Modifying
     @Query("DELETE FROM ConsultationSlot c WHERE c.teacher.id = :teacherId")
     void deleteByTeacherId(@Param("teacherId") Long teacherId);
