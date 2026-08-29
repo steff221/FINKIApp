@@ -2,6 +2,7 @@ package com.finki.scheduler.service;
 
 import com.finki.scheduler.domain.Exam;
 import com.finki.scheduler.repository.ExamRepository;
+import com.finki.scheduler.service.parsing.CsvFields;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,27 +58,27 @@ public class ExamService {
         if (csv == null || csv.isBlank())
             throw new IllegalArgumentException("CSV body is empty");
 
-        String[] lines = csv.replace("﻿", "").split("\\r?\\n");
-        char delim = lines[0].contains(";") ? ';' : ',';
+        String[] lines = CsvFields.lines(csv);
+        char delim = CsvFields.delimiterOf(lines[0]);
 
         List<Exam> out = new ArrayList<>();
         for (int i = 1; i < lines.length; i++) { // skip header row
             String line = lines[i].trim();
             if (line.isEmpty()) continue;
 
-            String[] cols = splitCsv(line, delim);
-            String subject = col(cols, 0);
+            String[] cols = CsvFields.split(line, delim);
+            String subject = CsvFields.col(cols, 0);
             if (subject.isEmpty()) continue; // skip blank/spacer rows
 
             try {
                 out.add(Exam.builder()
                     .session(session)
                     .subjectName(subject)
-                    .date(parseDate(col(cols, 1)))
-                    .startTime(parseTime(col(cols, 2)))
-                    .endTime(parseTime(col(cols, 3)))
-                    .rooms(emptyToNull(col(cols, 4)))
-                    .note(emptyToNull(col(cols, 5)))
+                    .date(CsvFields.date(CsvFields.col(cols, 1)))
+                    .startTime(CsvFields.time(CsvFields.col(cols, 2)))
+                    .endTime(CsvFields.time(CsvFields.col(cols, 3)))
+                    .rooms(CsvFields.emptyToNull(CsvFields.col(cols, 4)))
+                    .note(CsvFields.emptyToNull(CsvFields.col(cols, 5)))
                     .build());
             } catch (RuntimeException ex) {
                 throw new IllegalArgumentException(
@@ -87,67 +88,6 @@ public class ExamService {
         if (out.isEmpty())
             throw new IllegalArgumentException("No exam rows found in CSV");
         return out;
-    }
-
-    /** Minimal CSV split honouring double-quoted fields. */
-    private String[] splitCsv(String line, char delim) {
-        List<String> fields = new ArrayList<>();
-        StringBuilder cur = new StringBuilder();
-        boolean inQuotes = false;
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            if (c == '"') {
-                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
-                    cur.append('"'); i++;
-                } else {
-                    inQuotes = !inQuotes;
-                }
-            } else if (c == delim && !inQuotes) {
-                fields.add(cur.toString().trim());
-                cur.setLength(0);
-            } else {
-                cur.append(c);
-            }
-        }
-        fields.add(cur.toString().trim());
-        return fields.toArray(new String[0]);
-    }
-
-    private String col(String[] cols, int i) {
-        return i < cols.length && cols[i] != null ? cols[i].trim() : "";
-    }
-
-    private String emptyToNull(String s) {
-        return s == null || s.isBlank() ? null : s;
-    }
-
-    private LocalDate parseDate(String s) {
-        if (s == null || s.isBlank())
-            throw new IllegalArgumentException("missing date");
-        s = s.trim();
-        if (s.contains(".")) {
-            String[] p = s.split("\\.");
-            return LocalDate.of(pad4(p[2]), Integer.parseInt(p[1].trim()), Integer.parseInt(p[0].trim()));
-        }
-        if (s.contains("/")) {
-            String[] p = s.split("/");
-            return LocalDate.of(pad4(p[2]), Integer.parseInt(p[1].trim()), Integer.parseInt(p[0].trim()));
-        }
-        return LocalDate.parse(s); // ISO YYYY-MM-DD
-    }
-
-    private int pad4(String year) {
-        int y = Integer.parseInt(year.trim());
-        return y < 100 ? 2000 + y : y;
-    }
-
-    private LocalTime parseTime(String s) {
-        if (s == null || s.isBlank()) return null;
-        s = s.trim();
-        String[] p = s.split(":");
-        int h = Integer.parseInt(p[0].trim());
-        int m = p.length > 1 ? Integer.parseInt(p[1].trim()) : 0;
-        return LocalTime.of(h, m);
     }
 
     // ── ICS export ──────────────────────────────────────────────────────────────
